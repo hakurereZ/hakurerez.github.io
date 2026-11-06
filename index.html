@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ワンピカード デッキビルダー - 完全統合版</title>
+    <!-- PapaParse: CSV解析用ライブラリ -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <style>
+        /* 基本スタイル・レイアウト設定 */
+        body { font-family: "MS PGothic", "Hiragino Kaku Gothic ProN", sans-serif; font-size: 14px; color: #333; background-color: #fff; margin: 0; padding: 0; touch-action: manipulation; }
+        .container { max-width: 600px; margin: 0 auto; padding: 10px; box-sizing: border-box; }
+        
+        /* 上部タブ切り替えメニュー UI */
+        .tab-bar { display: flex; width: 100%; border-bottom: 2px solid #333; margin-bottom: 15px; position: sticky; top: 0; background: #fff; z-index: 5; }
+        .tab-btn { flex: 1; padding: 12px 0; text-align: center; cursor: pointer; font-weight: bold; font-size: 15px; border: none; background: #eee; color: #777; outline: none; }
+        .tab-btn.active { background: #333; color: #fff; }
+        
+        .view-section { display: none; }
+        .view-section.active { display: block; }
+
+        /* デッキ一覧テーブル等 */
+        table { border-collapse: collapse; width: 100%; margin-bottom: 20px; font-size: 13px; }
+        th, td { border: 1px solid #aaa; padding: 6px 4px; text-align: center; }
+        th { background-color: #f0f0f0; font-weight: normal; white-space: nowrap; }
+        td.name-cell { text-align: left; width: 40%; font-weight: bold; }
+        td.kind-cell { white-space: nowrap; letter-spacing: -0.5px; }
+        
+        /* -------------------------------------------------------------
+         * カード背景色設定（濃色ベース＆混色用スタイル）
+         * ------------------------------------------------------------- */
+        /* 単色カード用：文字が見やすくはっきりした濃色背景 */
+        .color-red { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; } 
+        .color-green { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; } 
+        .color-blue { background-color: #cce5ff; color: #004085; border: 1px solid #b8daff; }
+        .color-purple { background-color: #e2d9f3; color: #3d2265; border: 1px solid #d4c5ec; } 
+        .color-black { background-color: #d1d1d1; color: #212529; border: 1px solid #bcbcbc; } 
+        .color-yellow { background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; } 
+
+        /* 混色カード用：文字にシャドウをつけて斜めストライプ上でも可読性を保持 */
+        .color-multi-stripe {
+            color: #111;
+            font-weight: bold;
+            border: 1px solid #999;
+            text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.9), -1px -1px 2px rgba(255, 255, 255, 0.9);
+        }
+
+        /* 行の基本操作スタイル */
+        .main-row { cursor: pointer; user-select: none; } 
+        .main-row:hover { opacity: 0.85; }
+        .detail-row { display: none; background-color: #fdfdfd; text-align: left; font-size: 12px; color: #555; }
+        .detail-content { padding: 8px; border-top: 1px dashed #ccc; text-shadow: none; }
+        .detail-badge { display: inline-block; background: #eee; padding: 2px 6px; border-radius: 4px; margin-right: 8px; margin-bottom: 4px; font-size: 11px; color: #333; }
+        .leader-border { border-bottom: 4px double #555 !important; }
+        
+        /* 並び替え用ドラッグハンドル */
+        .drag-handle { cursor: grab; font-size: 16px; padding: 0 4px; color: #666; touch-action: none; }
+        .drag-handle:active { cursor: grabbing; }
+        
+        /* フォーム部品UI */
+        select, input[type="text"], input[type="number"] { padding: 4px; font-size: 13px; border: 1px solid #aaa; border-radius: 4px; }
+        .buttons, .sim-buttons { margin-bottom: 15px; display: flex; gap: 10px; flex-wrap: wrap; }
+        .buttons button, .sim-buttons button { padding: 6px 15px; font-size: 14px; cursor: pointer; }
+        .btn-delete { color: #d9534f; font-weight: bold; border: 1px solid #d43f3a; background: #fff; border-radius: 3px; cursor: pointer; padding: 2px 6px; }
+
+        /* モーダル表示 */
+        .modal { display: none; position: fixed; z-index: 10; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); }
+        .modal-content { background-color: #fff; margin: 5% auto; padding: 15px; border: 1px solid #888; width: 95%; max-width: 600px; border-radius: 8px; box-sizing: border-box; }
+        .close { color: #aaa; float: right; font-size: 24px; font-weight: bold; cursor: pointer; line-height: 1; }
+        .close:hover { color: black; }
+        
+        /* カード検索モーダル内のフィルター項目 */
+        .search-filters { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; background: #f5f5f5; padding: 10px; border-radius: 6px; margin-bottom: 10px; font-size: 12px; }
+        .search-filters label { display: flex; flex-direction: column; font-weight: bold; color: #555; }
+        .search-filters input, .search-filters select { margin-top: 2px; box-sizing: border-box; }
+        .search-flex-row { display: flex; gap: 4px; margin-top: 2px; }
+        .search-flex-row input { flex: 1; min-width: 0; }
+        .search-flex-row select { width: 70px; flex-shrink: 0; }
+        .full-width { grid-column: span 2; }
+        
+        /* 検索結果カードアイテム */
+        .result-card { border: 1px solid #ccc; border-radius: 6px; padding: 10px; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .result-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-bottom: 5px; }
+        .result-title { font-weight: bold; font-size: 15px; }
+        .result-id { font-size: 11px; color: #888; margin-right: 5px; }
+        
+        .result-stats { display: flex; flex-wrap: wrap; gap: 6px; font-size: 13px; margin-bottom: 8px; }
+        .result-stat-badge { background: #eee; padding: 4px 8px; border-radius: 4px; color: #222; border: 1px solid #ddd; font-weight: bold; text-shadow: none; }
+        
+        .result-text { font-size: 13px; line-height: 1.5; color: #333; background: #fdfdfd; padding: 8px; border-radius: 4px; border: 1px dashed #ddd; margin-top: 5px; text-shadow: none; }
+        .btn-add { background: #4caf50; color: #fff; border: none; padding: 6px 12px; border-radius: 4px; font-weight: bold; cursor: pointer; text-shadow: none; }
+        .btn-add:hover { background: #45a049; }
+
+        /* 買い物リスト */
+        .shop-item { display: flex; align-items: center; justify-content: space-between; padding: 12px 8px; border-bottom: 1px solid #ddd; cursor: pointer; font-size: 14px; }
+        .shop-item:hover { background-color: #f9f9f9; }
+        .shop-item.bought { text-decoration: line-through; color: #aaa; background-color: #f0f0f0; }
+        .shop-input { width: 45px; text-align: center; font-size: 14px; padding: 4px; border: 1px solid #aaa; border-radius: 4px; }
+        .shop-summary { padding:15px; background:#e6f7ff; font-weight:bold; margin-bottom:15px; text-align:right; border-radius: 6px; font-size: 16px; border: 1px solid #91d5ff; }
+        .affiliate-banner { margin-top: 30px; padding: 20px; text-align: center; background: #fff5e6; border: 2px dashed #ff9900; border-radius: 8px; color: #d35400; font-weight: bold; }
+
+        /* 統計（ドン!!カーブ）エリア */
+        .stats-container { display: flex; flex-wrap: wrap; gap: 20px; width: 100%; margin-bottom: 30px; align-items: flex-end; }
+        .chart-container { position: relative; margin-top: 10px; margin-left: 20px; height: 150px; width: 330px; border-bottom: 2px solid #555; border-left: 2px solid #555; display: flex; align-items: flex-end; justify-content: space-around; padding-bottom: 1px; background-color: #fafafa; }
+        .grid-line { position: absolute; left: 0; right: 0; border-top: 1px dashed #aaa; z-index: 0; }
+        .grid-label { position: absolute; left: -20px; font-size: 10px; color: #555; }
+        .bar-col-wrapper { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; width: 22px; height: 100%; justify-content: flex-end; }
+        .bar-col { display: flex; flex-direction: column-reverse; width: 16px; }
+        .bar-segment { width: 100%; box-sizing: border-box; border-top: 1px solid rgba(255,255,255,0.3); }
+        .bar-label { position: absolute; bottom: -20px; font-size: 11px; color: #333; width: 100%; text-align: center; }
+        .counter-table { width: 150px; height: fit-content; margin-bottom: 20px; }
+
+        /* 初手確認シミュレーター */
+        .sim-area { background: #f9f9f9; border: 1px solid #ddd; padding: 15px; border-radius: 8px; width: 100%; box-sizing: border-box; margin-bottom: 30px; }
+        .hand-cards { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
+        .hand-card { border: 1px solid #999; border-radius: 4px; padding: 5px; font-size: 11px; width: calc(20% - 4px); box-sizing: border-box; text-align: center; }
+        .hand-cost { font-weight: bold; font-size: 13px; margin-bottom: 2px; }
+        .hand-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    </style>
+</head>
+<body>
+
+    <!-- タブ切り替えボタン -->
+    <div class="tab-bar">
+        <button class="tab-btn active" id="btn-tab-deck" onclick="switchTab('deck')">デッキ構築</button>
+        <button class="tab-btn" id="btn-tab-shopping" onclick="switchTab('shopping')">買い物リスト</button>
+    </div>
+
+    <div class="container">
+        <!-- デッキ構築画面 -->
+        <div id="view-deck" class="view-section active">
+            <p style="margin-top:0; font-size:12px; color:#666;" id="loading-status">※データを読み込んでいます...</p>
+
+            <!-- 現在構築中のデッキ一覧テーブル -->
+            <table id="deck-table">
+                <thead><tr><th>移動</th><th>枚数</th><th>コス</th><th>名前</th><th>パワー</th><th>種</th><th>削</th></tr></thead>
+                <tbody id="deck-list"></tbody>
+            </table>
+
+            <div class="buttons">
+                <button onclick="openSaveModal()">保存 / 読込 / 共有</button>
+                <button onclick="openSearch()">カードを追加</button>
+            </div>
+
+            <!-- コストカーブ & カウンター分布 -->
+            <div style="font-weight: bold; margin-bottom: 5px;">ドン!!カーブ ＆ カウンター</div>
+            <div class="stats-container">
+                <div class="chart-container" id="bar-chart-area"></div>
+                <table class="counter-table">
+                    <thead><tr><th colspan="2">カウンター値別</th></tr></thead>
+                    <tbody id="counter-body"></tbody>
+                </table>
+            </div>
+
+            <!-- ドローシミュレーター -->
+            <div class="sim-area">
+                <div style="font-weight: bold; margin-bottom: 10px;">初手確認シミュレーター（リーダー除外）</div>
+                <div class="sim-buttons">
+                    <button onclick="drawHand(5)">最初から (5枚)</button>
+                    <button onclick="drawHand(5)">マリガン (5枚)</button>
+                    <button onclick="drawOne()">1枚ドロー</button>
+                </div>
+                <div class="hand-cards" id="hand-display"><div style="color: #888;">ボタンを押すと手札が表示されます</div></div>
+                <div style="margin-top:10px; font-size:12px; color:#555;" id="deck-count-display"></div>
+            </div>
+        </div>
+
+        <!-- 買い物リスト画面 -->
+        <div id="view-shopping" class="view-section">
+            <h2 style="margin-top: 0;">買い物リスト</h2>
+            <p style="font-size: 13px; color: #555;">「所持」に枚数を入力すると「買う枚数」が自動計算されます。<br>行をタップすると購入済み（取消線）になります。</p>
+            <div id="shopping-summary" class="shop-summary"></div>
+            <div id="shopping-list-container"></div>
+            <div class="affiliate-banner">
+                <p style="margin:0; font-size: 16px;">広告・物販スペース</p>
+                <p style="margin:5px 0 0 0; font-size: 12px; font-weight:normal;">Amazonアソシエイト（スリーブ等）</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- カード追加・検索用モーダル -->
+    <div id="search-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeSearch()">&times;</span>
+            <h3 style="margin-top:0;">カードを追加</h3>
+            
+            <div class="search-filters" oninput="executeSearch()">
+                <label>名前<input type="text" id="sq-name" placeholder="例: ゾロ"></label>
+                <label>収録段<select id="sq-expansion" onchange="executeSearch()"><option value="">すべて</option></select></label>
+                <label>特徴<input type="text" id="sq-feature" placeholder="例: 超新星"></label>
+                <label class="full-width">テキスト<input type="text" id="sq-text" placeholder="例: 速攻、アクティブ"></label>
+                
+                <label>色 (リーダー制限)
+                    <select id="sq-color" onchange="executeSearch()"></select>
+                </label>
+                <label>種類
+                    <select id="sq-kind" onchange="executeSearch()">
+                        <option value="">すべて</option>
+                        <option value="リーダー">リーダー</option>
+                        <option value="キャラ">キャラ</option>
+                        <option value="イベント">イベント</option>
+                        <option value="ステージ">ステージ</option>
+                    </select>
+                </label>
+                <label>コスト
+                    <div class="search-flex-row">
+                        <input type="number" id="sq-cost" min="0" max="10" placeholder="値" oninput="executeSearch()">
+                        <select id="sq-cost-op" onchange="executeSearch()">
+                            <option value="eq">等しい</option>
+                            <option value="gte">以上</option>
+                            <option value="lte">以下</option>
+                        </select>
+                    </div>
+                </label>
+                <label>パワー
+                    <div class="search-flex-row">
+                        <input type="number" id="sq-power" step="1000" placeholder="値" oninput="executeSearch()">
+                        <select id="sq-power-op" onchange="executeSearch()">
+                            <option value="eq">等しい</option>
+                            <option value="gte">以上</option>
+                            <option value="lte">以下</option>
+                        </select>
+                    </div>
+                </label>
+                <label class="full-width">カウンター
+                    <select id="sq-counter" onchange="executeSearch()">
+                        <option value="">指定なし</option>
+                        <option value="0">カウンターなし (-)</option>
+                        <option value="1000">+1000</option>
+                        <option value="2000">+2000</option>
+                    </select>
+                </label>
+            </div>
+            
+            <p style="font-size: 12px; color: #555; margin:5px 0;" id="search-count-info"></p>
+            <div id="search-results" style="max-height: 50vh; overflow-y: auto; padding-right: 5px;"></div>
+        </div>
+    </div>
+
+    <!-- 保存 / 読込 / 共有モーダル -->
+    <div id="save-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeSaveModal()">&times;</span>
+            <h3 style="margin-top:0;">デッキの保存・読み込み・共有</h3>
+            
+            <div style="margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+                <div style="font-weight: bold; margin-bottom: 5px;">ローカル保存</div>
+                <input type="text" id="deck-name-input" placeholder="デッキ名を入力" style="width: calc(100% - 90px); padding: 6px;">
+                <button onclick="saveCurrentDeck()" style="padding: 6px 12px; background: #333; color: #fff; border:none; border-radius:4px; cursor:pointer;">保存</button>
+            </div>
+
+            <div style="margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+                <div style="font-weight: bold; margin-bottom: 5px;">URL共有</div>
+                <button onclick="copyShareUrl()" style="width: 100%; padding: 8px; background: #1e88e5; color: #fff; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">共有用URLをコピー</button>
+            </div>
+
+            <div style="font-weight: bold; margin-bottom: 5px;">保存済みデッキ一覧</div>
+            <div id="saved-decks-list" style="max-height: 30vh; overflow-y: auto; border: 1px solid #ddd; padding: 5px; border-radius: 4px;"></div>
+        </div>
+    </div>
+
+    <script>
+        // // デプロイしたGoogle Apps Script (GAS) のWeb API URLを指定（シングルクォーテーションで囲む）
+        const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbw1EvfXRSHOnIMfE-eQo3qOmMJPfFWpwuz3LAdEjqKVEeuiksVNzpYsy-xYK57JCoCj/exec';
+
+        // // アプリ全体で共有するデータストア変数
+        let masterCatalog = []; // // 全カードのマスターデータ配列
+        let deckData = [];      // // 現在選択されているデッキのカード一覧
+        let ownedCards = {};    // // 買い物リストの所持枚数情報 { "OP01-001": 2, ... }
+
+        // -------------------------------------------------------------
+        // // 【初期化】アプリ起動時にGASから全カードデータを通信取得
+        // -------------------------------------------------------------
+        async function initApp() {
+            try {
+                // // fetchでGAS APIからカードマスターJSONを取得
+                const response = await fetch(GAS_API_URL);
+                const resultsData = await response.json();
+
+                // // スプレッドシート側の列名表記揺れに対応するためプロパティマッピング
+                masterCatalog = resultsData.map(row => {
+                    const getVal = (keys) => {
+                        for (let k of keys) {
+                            if (row[k] !== undefined && row[k] !== null) return String(row[k]).trim();
+                        }
+                        return '';
+                    };
+
+                    return {
+                        id: getVal(['id', 'ID', 'カードID', '番号']),
+                        name: getVal(['name', '名前', 'カード名']),
+                        kind: getVal(['card_type', 'kind', 'カードタイプ', '種類', '種別']),
+                        color: getVal(['color', '色']),
+                        life: getVal(['life', 'ライフ']) || '-',
+                        cost: getVal(['cost', 'コスト']) || '-',
+                        power: getVal(['power', 'パワー']) || '-',
+                        counter: getVal(['counter', 'カウンター']) || '-',
+                        attribute: getVal(['attribute', '属性']) || '-',
+                        feature: getVal(['feature', '特徴']),
+                        text: getVal(['effect', 'text', '効果', 'テキスト'])
+                    };
+                });
+
+                // // 読み込みメッセージを非表示化
+                document.getElementById("loading-status").style.display = "none";
+
+                // // 1. URL共有ハッシュがあればそれを復元
+                const loadedFromHash = loadDeckFromUrlHash();
+
+                // // 2. デフォルト状態（勝手にリーダーを埋め込まず空のデッキから開始可能に調整）
+                if (!loadedFromHash && masterCatalog.length > 0) {
+                    deckData = []; 
+                }
+
+                // // フィルタ・UI初期化
+                initExpansionSelect();
+                renderDeck();
+            } catch (err) {
+                console.error(err);
+                document.getElementById("loading-status").innerHTML = "<span style='color:red;'>スプレッドシートデータの取得に失敗しました。</span>";
+            }
+        }
+
+        // // 検索モーダル内の「収録段」セレクトボックスをマスターデータから動的生成
+        function initExpansionSelect() {
+            const expansions = [...new Set(masterCatalog.map(c => c.id.split('-')[0]))].sort();
+            const select = document.getElementById("sq-expansion");
+            select.innerHTML = '<option value="">すべて</option>';
+            expansions.forEach(exp => {
+                select.insertAdjacentHTML('beforeend', `<option value="${exp}">${exp}</option>`);
+            });
+        }
+
+        // // タブ切り替え処理（デッキ構築 ⇔ 買い物リスト）
+        function switchTab(tabId) {
+            document.getElementById('btn-tab-deck').classList.remove('active');
+            document.getElementById('btn-tab-shopping').classList.remove('active');
+            document.getElementById('btn-tab-' + tabId).classList.add('active');
+            document.getElementById('view-deck').classList.remove('active');
+            document.getElementById('view-shopping').classList.remove('active');
+            document.getElementById('view-' + tabId).classList.add('active');
+            if (tabId === 'shopping') renderShoppingList();
+        }
+
+        // -------------------------------------------------------------
+        // // 【色・グラデーション計算】混色カードの立ち入り禁止テープ風背景処理
+        // -------------------------------------------------------------
+        const colorPalette = {
+            "赤": "#f8d7da",
+            "緑": "#d4edda",
+            "青": "#cce5ff",
+            "紫": "#e2d9f3",
+            "黒": "#555555", // // 立ち入り禁止テープ風に黒色をはっきり強調
+            "黄": "#ffecb3"
+        };
+
+        // // 色文字列（単色 or "赤/緑"などの混色）から対応するCSSクラス/スタイルを生成
+        function getColorClass(c) {
+            if (!c) return { isMulti: false, className: "" };
+            
+            // // 混色（スラッシュ区切り）の場合：45度斜めストライプ（立ち入り禁止テープ風）のインラインCSSを生成
+            if (c.includes("/")) {
+                const colors = c.split("/").map(s => s.trim());
+                if (colors.length >= 2) {
+                    const c1 = colorPalette[colors[0]] || "#eee";
+                    const c2 = colorPalette[colors[1]] || "#ccc";
+                    const stripeStyle = `background: repeating-linear-gradient(45deg, ${c1}, ${c1} 12px, ${c2} 12px, ${c2} 24px) !important;`;
+                    return { isMulti: true, style: stripeStyle };
+                }
+            }
+            
+            // // 単色の場合：濃色スタイルのCSSクラスを返す
+            const m = { "赤": "color-red", "緑": "color-green", "青": "color-blue", "紫": "color-purple", "黒": "color-black", "黄": "color-yellow" };
+            return { isMulti: false, className: m[c] || "" };
+        }
+
+        const chartColorMap = { "赤": "#e53935", "緑": "#43a047", "青": "#1e88e5", "紫": "#8e24aa", "黒": "#424242", "黄": "#fdd835", "多": "#8d6e63" };
+        function toHalfWidthKana(s) { const m = { "リーダー": "ﾘｰﾀﾞｰ", "キャラ": "ｷｬﾗ", "イベント": "ｲﾍﾞﾝﾄ", "ステージ": "ｽﾃｰｼﾞ", "ドン!!": "ﾄﾞﾝ!!" }; return m[s] || s; }
+
+        // // デッキ内のリーダーの色を取得（空白スペースを除去して正しく配列化）
+        function getLeaderColors() {
+            const leader = deckData.find(c => c.kind === "リーダー" && c.count > 0);
+            if (!leader) return [];
+            // スラッシュで分割し、それぞれの前後の空白（スペース）を trim() で綺麗に取り除く
+            return leader.color.split("/").map(s => s.trim());
+        }
+
+        // // カードの色が現在のリーダーで使用可能か判定
+        function isValidColorForDeck(cardColor) {
+            const leaderColors = getLeaderColors();
+            if (leaderColors.length === 0) return true;
+            
+            // カード側も同様にスペースをトリムして比較
+            const cColors = cardColor.split("/").map(s => s.trim());
+            return cColors.every(c => leaderColors.includes(c));
+        }
+
+        // // アコーディオン詳細表示の切り替え
+        function toggleDetail(i) {
+            const row = document.getElementById(`detail-${i}`);
+            row.style.display = row.style.display === "table-row" ? "none" : "table-row";
+        }
+
+        // // デッキ内のカード枚数変更
+        function updateCount(id, val) {
+            const countVal = parseInt(val, 10);
+            const targetIndex = deckData.findIndex(c => c.id === id);
+            
+            if (targetIndex !== -1) {
+                if (countVal === 0) {
+                    // // 枚数を0にしたらデッキから除外（リーダーも外せるように対応）
+                    deckData.splice(targetIndex, 1);
+                } else {
+                    deckData[targetIndex].count = countVal;
+                }
+                renderDeck();
+            }
+        }
+
+        // // 削除（✖）ボタンを押した際の処理
+        function removeCard(id) {
+            const card = deckData.find(c => c.id === id);
+            if (!card) return;
+
+            const isLeader = (card.kind === "リーダー");
+            const msg = isLeader ? "リーダーを外しますか？" : "削除しますか？";
+
+            if (confirm(msg)) {
+                // // リーダーか否かにかかわらず安全に配列から完全に削除
+                deckData = deckData.filter(c => c.id !== id);
+                renderDeck();
+            }
+        }
+
+        // -------------------------------------------------------------
+        // // 【デッキテーブル描画】現在のデッキデータを画面テーブルに反映
+        // -------------------------------------------------------------
+        function renderDeck() {
+            const tbody = document.getElementById("deck-list");
+            tbody.innerHTML = "";
+            
+            // // リーダーを常に一番上に配置
+            const leader = deckData.find(c => c.kind === "リーダー");
+            const others = deckData.filter(c => c.kind !== "リーダー");
+            const sortedDeck = leader ? [leader, ...others] : others;
+
+            sortedDeck.forEach((card, idx) => {
+                const isL = card.kind === "リーダー";
+                
+                // // 色に応じた背景クラス／斜めストライプ（立ち入り禁止テープ風）スタイルの取得
+                const colorInfo = getColorClass(card.color);
+                const rowCls = (colorInfo.isMulti ? "color-multi-stripe" : colorInfo.className) + (isL ? " leader-border" : "");
+                const inlineStyle = colorInfo.isMulti ? colorInfo.style : "";
+
+                const pwr = (card.power === "-" || card.power == null) ? "-" : card.power;
+                const cnt = (card.counter === "-" || card.counter == null) ? "-" : card.counter;
+                
+                const trMain = document.createElement("tr");
+                trMain.className = `main-row ${rowCls}`;
+                if (inlineStyle) trMain.setAttribute("style", inlineStyle);
+                trMain.onclick = () => toggleDetail(idx);
+                if (!isL) trMain.dataset.id = card.id;
+
+                // // 枚数選択セレクトボックス（リーダーの場合は 1 または 0(外す) を選択可能）
+                let selHtml = "";
+                if (isL) {
+                    selHtml = `<select onclick="event.stopPropagation()" onchange="updateCount('${card.id}', this.value)">
+                               <option value="1" ${card.count==1?"selected":""}>1</option>
+                               <option value="0">0 (外す)</option></select>`;
+                } else {
+                    selHtml = `<select onclick="event.stopPropagation()" onchange="updateCount('${card.id}', this.value)">`;
+                    for(let i=0; i<=4; i++) selHtml += `<option value="${i}" ${card.count==i?"selected":""}>${i}</option>`;
+                    selHtml += `</select>`;
+                }
+
+                const handleHtml = isL ? '-' : '<span class="drag-handle" title="ドラッグして並び替え">☰</span>';
+
+                trMain.innerHTML = `
+                    <td>${handleHtml}</td><td>${selHtml}</td><td>${isL ? '-' : card.cost}</td><td class="name-cell">[${card.id}] ${card.name}</td>
+                    <td>${pwr}</td><td class="kind-cell">${toHalfWidthKana(card.kind)}</td>
+                    <td onclick="event.stopPropagation()"><button class="btn-delete" onclick="removeCard('${card.id}')">✖</button></td>
+                `;
+                tbody.appendChild(trMain);
+
+                // // アコーディオン展開用詳細行
+                const trDet = document.createElement("tr");
+                trDet.id = `detail-${idx}`;
+                trDet.className = `detail-row`;
+                trDet.innerHTML = `<td colspan="7"><div class="detail-content">
+                    <span class="detail-badge">色: ${card.color}</span><span class="detail-badge">特徴: ${card.feature || "-"}</span><span class="detail-badge">カウンター: ${cnt}</span>
+                    <div style="margin-top: 6px;">${(card.text || "").replace(/\n/g, '<br>')}</div>
+                </div></td>`;
+                tbody.appendChild(trDet);
+            });
+
+            initDragAndDrop();
+            renderStats();
+        }
+
+        // // ドラッグ＆ドロップによるメインデッキ並び替え
+        function initDragAndDrop() {
+            const tbody = document.getElementById("deck-list");
+            let draggedRow = null;
+
+            tbody.querySelectorAll('.drag-handle').forEach(handle => {
+                handle.addEventListener('pointerdown', (e) => {
+                    e.stopPropagation();
+                    const mainRow = e.target.closest('tr.main-row');
+                    if (!mainRow) return;
+
+                    draggedRow = mainRow;
+                    draggedRow.style.opacity = '0.4';
+                    
+                    const detailRow = draggedRow.nextElementSibling;
+                    if (detailRow && detailRow.classList.contains('detail-row')) {
+                        detailRow.style.display = 'none';
+                    }
+
+                    handle.setPointerCapture(e.pointerId);
+                });
+
+                handle.addEventListener('pointermove', (e) => {
+                    if (!draggedRow) return;
+                    e.preventDefault();
+
+                    draggedRow.style.display = 'none';
+                    const targetElem = document.elementFromPoint(e.clientX, e.clientY);
+                    draggedRow.style.display = '';
+
+                    const targetRow = targetElem ? targetElem.closest('tr.main-row') : null;
+                    
+                    if (targetRow && targetRow !== draggedRow && !targetRow.classList.contains('leader-border')) {
+                        const rect = targetRow.getBoundingClientRect();
+                        const isAfter = (e.clientY - rect.top) / (rect.bottom - rect.top) > 0.5;
+                        const draggedDetail = draggedRow.nextElementSibling && draggedRow.nextElementSibling.classList.contains('detail-row') ? draggedRow.nextElementSibling : null;
+
+                        if (isAfter) {
+                            targetRow.parentNode.insertBefore(draggedRow, targetRow.nextSibling.nextSibling || targetRow.nextSibling);
+                            if (draggedDetail) targetRow.parentNode.insertBefore(draggedDetail, draggedRow.nextSibling);
+                        } else {
+                            targetRow.parentNode.insertBefore(draggedRow, targetRow);
+                            if (draggedDetail) targetRow.parentNode.insertBefore(draggedDetail, draggedRow.nextSibling);
+                        }
+                    }
+                });
+
+                const endDrag = (e) => {
+                    if (!draggedRow) return;
+                    updateDeckDataOrder();
+                    renderDeck();
+                    draggedRow = null;
+                    try { handle.releasePointerCapture(e.pointerId); } catch (err) {}
+                };
+
+                handle.addEventListener('pointerup', endDrag);
+                handle.addEventListener('pointercancel', endDrag);
+            });
+        }
+
+        // // 並び替え順を内部データ（deckData）に同期
+        function updateDeckDataOrder() {
+            const tbody = document.getElementById("deck-list");
+            const mainRows = tbody.querySelectorAll('tr.main-row');
+            let newOthers = [];
+            
+            mainRows.forEach(row => {
+                const id = row.dataset.id;
+                if (id) {
+                    const card = deckData.find(c => c.id === id);
+                    if (card) newOthers.push(card);
+                }
+            });
+
+            const leader = deckData.find(c => c.kind === "リーダー");
+            deckData = leader ? [leader, ...newOthers] : newOthers;
+        }
+
+        // // 統計グラフ（コストカーブ・カウンター値）描画
+        function renderStats() {
+            const maxCost = 10; const orderedColors = ["赤", "緑", "青", "紫", "黒", "黄", "多"];
+            const costsData = Array.from({length: maxCost + 1}, () => ({}));
+            let counterStats = { "0": 0, "1000": 0, "2000": 0 };
+            let totalCards = 0;
+
+            deckData.forEach(card => {
+                if(card.kind === "リーダー" || card.kind === "ドン!!" || card.count === 0) return;
+                const cost = card.cost > maxCost ? maxCost : card.cost;
+                const count = card.count;
+                let cGrp = card.color.includes("/") ? "多" : card.color;
+                if(!costsData[cost][cGrp]) costsData[cost][cGrp] = 0;
+                costsData[cost][cGrp] += count;
+                if(card.counter == 1000) counterStats["1000"] += count;
+                else if(card.counter == 2000) counterStats["2000"] += count;
+                else counterStats["0"] += count;
+                totalCards += count;
+            });
+
+            let chartHtml = `<div class="grid-line" style="bottom: 50px;"></div><div class="grid-label" style="bottom: 45px;">5</div>
+                             <div class="grid-line" style="bottom: 100px;"></div><div class="grid-label" style="bottom: 95px;">10</div>`;
+            for(let c=0; c<=maxCost; c++) {
+                let colHtml = `<div class="bar-col-wrapper"><div class="bar-col">`;
+                for(let color of orderedColors) {
+                    const cnt = costsData[c][color];
+                    if(cnt > 0) {
+                        const h = cnt * 10; 
+                        const bgColor = chartColorMap[color] || "#aaa";
+                        colHtml += `<div class="bar-segment" style="height:${h}px; background-color:${bgColor};" title="${color}: ${cnt}枚"></div>`;
+                    }
+                }
+                colHtml += `</div><div class="bar-label">${c}</div></div>`;
+                chartHtml += colHtml;
+            }
+            document.getElementById("bar-chart-area").innerHTML = chartHtml;
+            document.getElementById("counter-body").innerHTML = `
+                <tr><td>なし</td><td>${counterStats["0"]}枚</td></tr>
+                <tr><td>+1000</td><td>${counterStats["1000"]}枚</td></tr>
+                <tr><td>+2000</td><td>${counterStats["2000"]}枚</td></tr>
+                <tr style="background:#eee; font-weight:bold;"><td>合計</td><td>${totalCards}枚 / 50枚</td></tr>
+            `;
+        }
+
+        // // 初手ドローシミュレーター機能
+        let simDeck = [];
+        function initSimDeck() {
+            simDeck = [];
+            deckData.forEach(c => {
+                if(c.kind === "リーダー" || c.kind === "ドン!!" || c.count === 0) return;
+                for(let i=0; i<c.count; i++) simDeck.push(c);
+            });
+            for (let i = simDeck.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [simDeck[i], simDeck[j]] = [simDeck[j], simDeck[i]];
+            }
+        }
+        function drawHand(num) {
+            initSimDeck();
+            document.getElementById("hand-display").innerHTML = "";
+            for(let i=0; i<num; i++) drawOne();
+            document.getElementById("deck-count-display").innerText = `残り山札: ${simDeck.length}枚`;
+        }
+        function drawOne() {
+            if(simDeck.length === 0) return alert("デッキがありません！");
+            const drawn = simDeck.pop();
+            const handArea = document.getElementById("hand-display");
+            if(handArea.innerHTML.includes("ボタンを押すと")) handArea.innerHTML = "";
+            
+            const colorInfo = getColorClass(drawn.color);
+            const cardCls = colorInfo.isMulti ? "color-multi-stripe" : colorInfo.className;
+            const inlineStyle = colorInfo.isMulti ? colorInfo.style : "";
+
+            handArea.insertAdjacentHTML('beforeend', `
+                <div class="hand-card ${cardCls}" style="${inlineStyle}">
+                    <div class="hand-cost">Cost ${drawn.cost}</div><div class="hand-name">${drawn.name}</div>
+                    <div style="font-size:10px; margin-top:2px;">${toHalfWidthKana(drawn.kind)}</div>
+                </div>
+            `);
+            document.getElementById("deck-count-display").innerText = `残り山札: ${simDeck.length}枚`;
+        }
+
+        // -------------------------------------------------------------
+        // // 【カード検索モーダル】条件指定検索・フィルタリング処理
+        // -------------------------------------------------------------
+        function openSearch() {
+            document.getElementById("search-modal").style.display = "block";
+            const lColors = getLeaderColors();
+            const colorSelect = document.getElementById("sq-color");
+            colorSelect.innerHTML = `<option value="">すべて${lColors.length > 0 ? ' (制限内)' : ''}</option>`;
+            
+            if (lColors.length > 0) {
+                lColors.forEach(c => {
+                    colorSelect.insertAdjacentHTML('beforeend', `<option value="${c}">${c}</option>`);
+                });
+            } else {
+                ["赤","緑","青","紫","黒","黄"].forEach(c => {
+                    colorSelect.insertAdjacentHTML('beforeend', `<option value="${c}">${c}</option>`);
+                });
+            }
+            executeSearch();
+        }
+        
+        function closeSearch() { document.getElementById("search-modal").style.display = "none"; }
+        
+        // // リアルタイム多角条件フィルタ検索の実行
+        function executeSearch() {
+            const sName = document.getElementById("sq-name").value.toLowerCase();
+            const sExpansion = document.getElementById("sq-expansion").value;
+            const sFeature = document.getElementById("sq-feature").value.toLowerCase();
+            const sText = document.getElementById("sq-text").value.toLowerCase();
+            const sColor = document.getElementById("sq-color").value;
+            const sKind = document.getElementById("sq-kind").value;
+            const sCost = document.getElementById("sq-cost").value;
+            const sCostOp = document.getElementById("sq-cost-op").value;
+            const sPower = document.getElementById("sq-power").value;
+            const sPowerOp = document.getElementById("sq-power-op").value;
+            const sCounter = document.getElementById("sq-counter").value;
+            
+            const resultsDiv = document.getElementById("search-results");
+            resultsDiv.innerHTML = "";
+            let matchCount = 0;
+            
+            masterCatalog.forEach(card => {
+                if(deckData.find(c => c.id === card.id)) return;
+                if(!isValidColorForDeck(card.color)) return;
+                if(sExpansion && !card.id.startsWith(sExpansion)) return;
+
+                if (sColor && !card.color.includes(sColor)) return;
+                if (sKind && card.kind !== sKind) return;
+                
+                if (sCost !== "") {
+                    const cVal = parseInt(card.cost, 10);
+                    const sVal = parseInt(sCost, 10);
+                    if (sCostOp === "eq" && cVal !== sVal) return;
+                    if (sCostOp === "gte" && cVal < sVal) return;
+                    if (sCostOp === "lte" && cVal > sVal) return;
+                }
+                
+                if (sPower !== "") {
+                    if (card.power === "-" || card.power == null) return;
+                    const cVal = parseInt(card.power, 10);
+                    const sVal = parseInt(sPower, 10);
+                    if (sPowerOp === "eq" && cVal !== sVal) return;
+                    if (sPowerOp === "gte" && cVal < sVal) return;
+                    if (sPowerOp === "lte" && cVal > sVal) return;
+                }
+                
+                if (sCounter !== "") {
+                    const cVal = card.counter === "-" ? "0" : String(card.counter);
+                    if (cVal !== sCounter) return;
+                }
+
+                if (sName && !card.name.toLowerCase().includes(sName)) return;
+                if (sFeature && !(card.feature || "").toLowerCase().includes(sFeature)) return;
+                if (sText && !(card.text || "").toLowerCase().includes(sText)) return;
+
+                matchCount++;
+                const pwrDisp = (card.power === "-" || card.power == null) ? "-" : card.power;
+                const cntDisp = (card.counter === "-" || card.counter == null) ? "-" : card.counter;
+                
+                // 色情報の取得（単色クラス or 混色スタイル）
+                const colorInfo = getColorClass(card.color);
+                const cardCls = colorInfo.isMulti ? "color-multi-stripe" : colorInfo.className;
+                const inlineStyle = colorInfo.isMulti ? colorInfo.style : "";
+
+                const div = document.createElement("div");
+                // result-card とカラー用クラス（color-red, color-green等）をあわせて付与
+                div.className = `result-card ${cardCls}`;
+                if (inlineStyle) {
+                    div.setAttribute("style", inlineStyle);
+                }
+
+                div.innerHTML = `
+                    <div class="result-header">
+                        <div>
+                            <span class="result-id">[${card.id}]</span>
+                            <span class="result-title">${card.name}</span>
+                        </div>
+                        <button class="btn-add" onclick="addCardToDeck('${card.id}')">追加</button>
+                    </div>
+                    <div class="result-stats">
+                        <span class="result-stat-badge">ｺｽﾄ: ${card.cost}</span>
+                        <span class="result-stat-badge">ﾊﾟﾜｰ: ${pwrDisp}</span>
+                        <span class="result-stat-badge">ｶｳﾝﾀｰ: ${cntDisp}</span>
+                        <span class="result-stat-badge">色: ${card.color}</span>
+                        <span class="result-stat-badge">種類: ${card.kind}</span>
+                    </div>
+                    <div style="font-size:12px; margin-bottom:5px; color:#555; text-shadow:none;">
+                        <b>特徴:</b> ${card.feature || "-"}
+                    </div>
+                    <div class="result-text">${(card.text || "").replace(/\n/g, '<br>')}</div>
+                `;
+                resultsDiv.appendChild(div);
+            });
+            
+            document.getElementById("search-count-info").innerText = `該当: ${matchCount} 件`;
+        }
+
+        // // 検索画面からデッキへ追加
+        function addCardToDeck(id) {
+            const card = masterCatalog.find(c => c.id === id);
+            if(card) {
+                // // リーダーを新しく追加する場合は既存のリーダーと置換
+                if (card.kind === "リーダー") {
+                    deckData = deckData.filter(c => c.kind !== "リーダー");
+                }
+                deckData.push({ ...card, count: 1 });
+                renderDeck();
+                executeSearch(); 
+            }
+        }
+
+        // -------------------------------------------------------------
+        // // 【データ保存・共有】LocalStorage / URLハッシュ同期機能
+        // -------------------------------------------------------------
+        function openSaveModal() {
+            document.getElementById("save-modal").style.display = "block";
+            renderSavedDecksList();
+        }
+        function closeSaveModal() { document.getElementById("save-modal").style.display = "none"; }
+
+        function getSavedDecks() {
+            const saved = localStorage.getItem('onepiece_vault_decks');
+            return saved ? JSON.parse(saved) : {};
+        }
+
+        function saveCurrentDeck() {
+            const nameInput = document.getElementById("deck-name-input");
+            const deckName = nameInput.value.trim();
+            if(!deckName) return alert("デッキ名を入力してください。");
+
+            const decks = getSavedDecks();
+            decks[deckName] = {
+                updatedAt: new Date().toLocaleString(),
+                cards: deckData
+            };
+            localStorage.setItem('onepiece_vault_decks', JSON.stringify(decks));
+            alert(`デッキ「${deckName}」を保存しました！`);
+            renderSavedDecksList();
+            nameInput.value = "";
+        }
+
+        function renderSavedDecksList() {
+            const listDiv = document.getElementById("saved-decks-list");
+            const decks = getSavedDecks();
+            const names = Object.keys(decks);
+
+            if(names.length === 0) {
+                listDiv.innerHTML = '<div style="color:#888; padding:5px;">保存されたデッキはありません。</div>';
+                return;
+            }
+
+            let html = "";
+            names.forEach(name => {
+                html += `
+                    <div style="display:flex; justify-content:space-between; align-items:center; padding:6px; border-bottom:1px solid #eee;">
+                        <div>
+                            <b>${name}</b> <span style="font-size:11px; color:#888;">(${decks[name].updatedAt})</span>
+                        </div>
+                        <div>
+                            <button onclick="loadDeck('${name}')" style="background:#4caf50; color:#fff; border:none; padding:4px 8px; border-radius:3px; cursor:pointer;">読込</button>
+                            <button onclick="deleteDeck('${name}')" style="background:#d9534f; color:#fff; border:none; padding:4px 8px; border-radius:3px; cursor:pointer;">削除</button>
+                        </div>
+                    </div>
+                `;
+            });
+            listDiv.innerHTML = html;
+        }
+
+        function loadDeck(name) {
+            const decks = getSavedDecks();
+            if(decks[name]) {
+                deckData = decks[name].cards;
+                renderDeck();
+                closeSaveModal();
+                alert(`デッキ「${name}」を読み込みました！`);
+            }
+        }
+
+        function deleteDeck(name) {
+            if(confirm(`デッキ「${name}」を削除しますか？`)) {
+                const decks = getSavedDecks();
+                delete decks[name];
+                localStorage.setItem('onepiece_vault_decks', JSON.stringify(decks));
+                renderSavedDecksList();
+            }
+        }
+
+        // // 現在のデッキ状態をBase64に暗号エンコードして共有URLを作成
+        function copyShareUrl() {
+            let deckMap = {};
+            deckData.forEach(c => {
+                if (c.count > 0) deckMap[c.id] = c.count;
+            });
+
+            if (Object.keys(deckMap).length === 0) return alert("デッキにカードがありません！");
+
+            try {
+                const jsonStr = JSON.stringify(deckMap);
+                const encoded = btoa(unescape(encodeURIComponent(jsonStr)));
+                const shareUrl = `${window.location.origin}${window.location.pathname}#deck=${encoded}`;
+                
+                navigator.clipboard.writeText(shareUrl).then(() => {
+                    alert("共有用URLをクリップボードにコピーしました。");
+                }).catch(() => {
+                    prompt("以下のURLをコピーしてください:", shareUrl);
+                });
+            } catch (e) {
+                console.error(e);
+                alert("URLの生成に失敗しました。");
+            }
+        }
+
+        // // URLハッシュからデッキ構成を自動デコード復元
+        function loadDeckFromUrlHash() {
+            const hash = window.location.hash;
+            if (!hash.includes("#deck=")) return false;
+
+            try {
+                const encoded = hash.split("#deck=")[1];
+                const jsonStr = decodeURIComponent(escape(atob(encoded)));
+                const deckMap = JSON.parse(jsonStr);
+
+                let newDeckData = [];
+                for (let id in deckMap) {
+                    const count = deckMap[id];
+                    const card = masterCatalog.find(c => c.id === id);
+                    if (card) newDeckData.push({ ...card, count: count });
+                }
+
+                if (newDeckData.length > 0) {
+                    deckData = newDeckData;
+                    return true;
+                }
+            } catch (e) {
+                console.error("URLからのデッキ読み込みに失敗しました", e);
+            }
+            return false;
+        }
+
+        // -------------------------------------------------------------
+        // // 【買い物リスト】所持数入力と必要購入枚数の自動計算
+        // -------------------------------------------------------------
+        function updateOwned(id, val) {
+            ownedCards[id] = parseInt(val, 10) || 0;
+            renderShoppingList(); 
+        }
+        function toggleBought(e, id) {
+            if(e.target.tagName.toLowerCase() === 'input') return;
+            e.currentTarget.classList.toggle("bought");
+        }
+
+        function renderShoppingList() {
+            const container = document.getElementById("shopping-list-container");
+            const summaryDiv = document.getElementById("shopping-summary");
+            container.innerHTML = "";
+
+            let reqMap = {};
+            deckData.forEach(c => {
+                if(c.kind === "リーダー" || c.kind === "ドン!!" || c.count === 0) return;
+                reqMap[c.id] = (reqMap[c.id] || 0) + c.count;
+            });
+
+            const ids = Object.keys(reqMap);
+            if(ids.length === 0) {
+                summaryDiv.innerText = "必要枚数: 0枚 / 買う枚数: 0枚";
+                container.innerHTML = '<div style="color:#888; text-align:center; padding:20px;">デッキにカードがありません</div>';
+                return;
+            }
+
+            let totalReq = 0;
+            let totalBuy = 0;
+
+            ids.forEach(id => {
+                const card = masterCatalog.find(c => c.id === id) || deckData.find(c => c.id === id) || { id: id, name: id };
+                const req = reqMap[id];
+                const owned = ownedCards[id] || 0;
+                const buy = Math.max(0, req - owned);
+
+                totalReq += req;
+                totalBuy += buy;
+
+                const itemDiv = document.createElement("div");
+                itemDiv.className = "shop-item";
+                itemDiv.onclick = (e) => toggleBought(e, id);
+                itemDiv.innerHTML = `
+                    <div>
+                        <b>[${card.id}] ${card.name}</b><br>
+                        <span style="font-size:12px; color:#555;">必要: ${req}枚 / 買値: <b>${buy}枚</b></span>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <span>所持:</span>
+                        <input type="number" class="shop-input" min="0" max="99" value="${owned}" 
+                               onclick="event.stopPropagation()" 
+                               onchange="updateOwned('${id}', this.value)">
+                    </div>
+                `;
+                container.appendChild(itemDiv);
+            });
+
+            summaryDiv.innerText = `総必要枚数: ${totalReq}枚 ／ 合計買う枚数: ${totalBuy}枚`;
+        }
+
+        // // アプリ全体初期化の実行
+        initApp();
+    </script>
+</body>
+</html>
