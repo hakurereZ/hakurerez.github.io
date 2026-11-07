@@ -22,16 +22,16 @@
         .view-section.active { display: block; }
 
         /* デッキ一覧テーブル等 */
-        table { border-collapse: collapse; width: 100%; margin-bottom: 20px; font-size: 13px; }
-        th, td { border: 1px solid #aaa; padding: 6px 4px; text-align: center; }
+        table { border-collapse: collapse; width: 100%; margin-bottom: 20px; font-size: 12px; }
+        th, td { border: 1px solid #aaa; padding: 4px 2px; text-align: center; }
         th { background-color: #f0f0f0; font-weight: normal; white-space: nowrap; }
-        td.name-cell { text-align: left; width: 40%; font-weight: bold; }
+        td.name-cell { text-align: left; width: 38%; font-weight: bold; font-size: 12px; }
         td.kind-cell { white-space: nowrap; letter-spacing: -0.5px; }
+        td.bold-cell { font-weight: bold; } /* コスト・パワーの太字装飾 */
         
         /* -------------------------------------------------------------
          * カード背景色設定（濃色ベース＆混色用スタイル）
          * ------------------------------------------------------------- */
-        /* 単色カード用：文字が見やすくはっきりした濃色背景 */
         .color-red { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; } 
         .color-green { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; } 
         .color-blue { background-color: #cce5ff; color: #004085; border: 1px solid #b8daff; }
@@ -39,7 +39,6 @@
         .color-black { background-color: #d1d1d1; color: #212529; border: 1px solid #bcbcbc; } 
         .color-yellow { background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; } 
 
-        /* 混色カード用：文字にシャドウをつけて斜めストライプ上でも可読性を保持 */
         .color-multi-stripe {
             color: #111;
             font-weight: bold;
@@ -51,19 +50,23 @@
         .main-row { cursor: pointer; user-select: none; } 
         .main-row:hover { opacity: 0.85; }
         .detail-row { display: none; background-color: #fdfdfd; text-align: left; font-size: 12px; color: #555; }
-        .detail-content { padding: 8px; border-top: 1px dashed #ccc; text-shadow: none; }
+        .detail-content { padding: 6px 8px; border-top: 1px dashed #ccc; text-shadow: none; }
         .detail-badge { display: inline-block; background: #eee; padding: 2px 6px; border-radius: 4px; margin-right: 8px; margin-bottom: 4px; font-size: 11px; color: #333; }
         .leader-border { border-bottom: 4px double #555 !important; }
         
-        /* 並び替え用ドラッグハンドル */
-        .drag-handle { cursor: grab; font-size: 16px; padding: 0 4px; color: #666; touch-action: none; }
-        .drag-handle:active { cursor: grabbing; }
-        
+        /* 順番移動ボタン */
+        .move-btn { background: #f0f0f0; border: 1px solid #aaa; border-radius: 3px; cursor: pointer; padding: 1px 4px; font-size: 11px; font-weight: bold; }
+        .move-btn:hover { background: #e0e0e0; }
+
+        /* ON/OFFトグルボタン */
+        .toggle-btn { background: #e0e0e0; border: 1px solid #888; border-radius: 4px; padding: 2px 8px; font-size: 11px; cursor: pointer; font-weight: bold; color: #555; }
+        .toggle-btn.active { background: #1e88e5; color: #fff; border-color: #1565c0; }
+
         /* フォーム部品UI */
-        select, input[type="text"], input[type="number"] { padding: 4px; font-size: 13px; border: 1px solid #aaa; border-radius: 4px; }
+        select, input[type="text"], input[type="number"] { padding: 3px; font-size: 12px; border: 1px solid #aaa; border-radius: 4px; }
         .buttons, .sim-buttons { margin-bottom: 15px; display: flex; gap: 10px; flex-wrap: wrap; }
         .buttons button, .sim-buttons button { padding: 6px 15px; font-size: 14px; cursor: pointer; }
-        .btn-delete { color: #d9534f; font-weight: bold; border: 1px solid #d43f3a; background: #fff; border-radius: 3px; cursor: pointer; padding: 2px 6px; }
+        .btn-delete { color: #d9534f; font-weight: bold; border: 1px solid #d43f3a; background: #fff; border-radius: 3px; cursor: pointer; padding: 1px 5px; font-size: 11px; }
 
         /* モーダル表示 */
         .modal { display: none; position: fixed; z-index: 10; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); }
@@ -94,12 +97,11 @@
         .btn-add:hover { background: #45a049; }
 
         /* 買い物リスト */
-        .shop-item { display: flex; align-items: center; justify-content: space-between; padding: 12px 8px; border-bottom: 1px solid #ddd; cursor: pointer; font-size: 14px; }
+        .shop-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 8px; border-bottom: 1px solid #ddd; cursor: pointer; font-size: 14px; }
         .shop-item:hover { background-color: #f9f9f9; }
         .shop-item.bought { text-decoration: line-through; color: #aaa; background-color: #f0f0f0; }
-        .shop-input { width: 45px; text-align: center; font-size: 14px; padding: 4px; border: 1px solid #aaa; border-radius: 4px; }
-        .shop-summary { padding:15px; background:#e6f7ff; font-weight:bold; margin-bottom:15px; text-align:right; border-radius: 6px; font-size: 16px; border: 1px solid #91d5ff; }
-        .affiliate-banner { margin-top: 30px; padding: 20px; text-align: center; background: #fff5e6; border: 2px dashed #ff9900; border-radius: 8px; color: #d35400; font-weight: bold; }
+        .shop-input { width: 40px; text-align: center; font-size: 13px; padding: 3px; border: 1px solid #aaa; border-radius: 4px; }
+        .shop-summary { padding: 12px; background: #e6f7ff; font-weight: bold; margin-bottom: 15px; text-align: right; border-radius: 6px; font-size: 15px; border: 1px solid #91d5ff; }
 
         /* 統計（ドン!!カーブ）エリア */
         .stats-container { display: flex; flex-wrap: wrap; gap: 20px; width: 100%; margin-bottom: 30px; align-items: flex-end; }
@@ -118,6 +120,19 @@
         .hand-card { border: 1px solid #999; border-radius: 4px; padding: 5px; font-size: 11px; width: calc(20% - 4px); box-sizing: border-box; text-align: center; }
         .hand-cost { font-weight: bold; font-size: 13px; margin-bottom: 2px; }
         .hand-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+        /* -------------------------------------------------------------
+         * スマホ表示時の全体縮小（PC表示を崩さずにスケール調整＆余白対策）
+         * ------------------------------------------------------------- */
+        @media screen and (max-width: 650px) {
+            body {
+                transform: scale(calc(100vw / 600));
+                transform-origin: top left;
+                width: 600px;
+                overflow-x: hidden;
+                margin-bottom: calc((600px - 100vw) * -1);
+            }
+        }
     </style>
 </head>
 <body>
@@ -132,6 +147,26 @@
         <!-- デッキ構築画面 -->
         <div id="view-deck" class="view-section active">
             <p style="margin-top:0; font-size:12px; color:#666;" id="loading-status">※データを読み込んでいます...</p>
+
+            <!-- 並び替え ＆ 表示切替コントロールバー -->
+            <div style="margin-bottom: 8px; display: flex; gap: 8px; align-items: center; font-size: 12px; background: #f5f5f5; padding: 6px; border-radius: 4px; justify-content: space-between;">
+                <div style="display: flex; gap: 6px; align-items: center;">
+                    <span><b>並び替え:</b></span>
+                    <select id="sort-key" onchange="applySortAndRender()">
+                        <option value="default">手動（▲▼順）</option>
+                        <option value="cost">コスト順</option>
+                        <option value="power">パワー順</option>
+                        <option value="color">色順</option>
+                    </select>
+                    <select id="sort-order" onchange="applySortAndRender()">
+                        <option value="asc">昇順</option>
+                        <option value="desc">降順</option>
+                    </select>
+                </div>
+                <div>
+                    <button id="toggle-id-btn" class="toggle-btn active" onclick="toggleShowId()">型番【】表示: ON</button>
+                </div>
+            </div>
 
             <!-- 現在構築中のデッキ一覧テーブル -->
             <table id="deck-table">
@@ -174,24 +209,23 @@
             <div id="shopping-summary" class="shop-summary"></div>
             <div id="shopping-list-container"></div>
             
-            <!-- ★ここからAmazonアソシエイトエリア -->
+            <!-- Amazonアソシエイトエリア -->
             <div style="margin-top: 20px; padding: 15px; border: 1px solid #e0e0e0; border-radius: 8px; background-color: #fafafa; text-align: center;">
                 <p style="font-size: 0.85rem; color: #666; font-weight: bold; margin: 0 0 10px 0;">
                     👑 管理人常用のオススメスリーブ
                 </p>
                 <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-bottom: 10px;">
                     <a href="https://link.amazon/B0fd7IRt2" target="_blank" rel="noopener" style="display: inline-block; padding: 8px 16px; background-color: #ff9900; color: #ffffff; text-decoration: none; font-size: 0.9rem; font-weight: bold; border-radius: 5px;">
-                        Yanomanスリーブ ハードX
+                        Katanaスリーブ ターコイズ
                     </a>
                     <a href="https://link.amazon/B0gz7Gift" target="_blank" rel="noopener" style="display: inline-block; padding: 8px 16px; background-color: #ff9900; color: #ffffff; text-decoration: none; font-size: 0.9rem; font-weight: bold; border-radius: 5px;">
-                        Katanaスリーブ
+                        Katanaスリーブ クリア
                     </a>
                 </div>
                 <p style="font-size: 0.75rem; color: #888; margin: 0;">
                     ここから買って管理人のコーヒーを奢ってください。
                 </p>
             </div>
-            <!-- ★ここまで -->
         </div>
     </div>
 
@@ -277,24 +311,20 @@
     </div>
 
     <script>
-        // // デプロイしたGoogle Apps Script (GAS) のWeb API URLを指定（シングルクォーテーションで囲む）
         const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbw1EvfXRSHOnIMfE-eQo3qOmMJPfFWpwuz3LAdEjqKVEeuiksVNzpYsy-xYK57JCoCj/exec';
 
-        // // アプリ全体で共有するデータストア変数
-        let masterCatalog = []; // // 全カードのマスターデータ配列
-        let deckData = [];      // // 現在選択されているデッキのカード一覧
-        let ownedCards = {};    // // 買い物リストの所持枚数情報 { "OP01-001": 2, ... }
+        let masterCatalog = []; 
+        let deckData = [];      
+        let ownedCards = {};    
+        let currentSortKey = "default";
+        let currentSortOrder = "asc";
+        let showCardId = true; // カード名に型番【】を付けるかどうかのフラグ
 
-        // -------------------------------------------------------------
-        // // 【初期化】アプリ起動時にGASから全カードデータを通信取得
-        // -------------------------------------------------------------
         async function initApp() {
             try {
-                // // fetchでGAS APIからカードマスターJSONを取得
                 const response = await fetch(GAS_API_URL);
                 const resultsData = await response.json();
 
-                // // スプレッドシート側の列名表記揺れに対応するためプロパティマッピング
                 masterCatalog = resultsData.map(row => {
                     const getVal = (keys) => {
                         for (let k of keys) {
@@ -318,18 +348,14 @@
                     };
                 });
 
-                // // 読み込みメッセージを非表示化
                 document.getElementById("loading-status").style.display = "none";
 
-                // // 1. URL共有ハッシュがあればそれを復元
                 const loadedFromHash = loadDeckFromUrlHash();
 
-                // // 2. デフォルト状態（勝手にリーダーを埋め込まず空のデッキから開始可能に調整）
                 if (!loadedFromHash && masterCatalog.length > 0) {
                     deckData = []; 
                 }
 
-                // // フィルタ・UI初期化
                 initExpansionSelect();
                 renderDeck();
             } catch (err) {
@@ -338,7 +364,6 @@
             }
         }
 
-        // // 検索モーダル内の「収録段」セレクトボックスをマスターデータから動的生成
         function initExpansionSelect() {
             const expansions = [...new Set(masterCatalog.map(c => c.id.split('-')[0]))].sort();
             const select = document.getElementById("sq-expansion");
@@ -348,7 +373,6 @@
             });
         }
 
-        // // タブ切り替え処理（デッキ構築 ⇔ 買い物リスト）
         function switchTab(tabId) {
             document.getElementById('btn-tab-deck').classList.remove('active');
             document.getElementById('btn-tab-shopping').classList.remove('active');
@@ -359,23 +383,18 @@
             if (tabId === 'shopping') renderShoppingList();
         }
 
-        // -------------------------------------------------------------
-        // // 【色・グラデーション計算】混色カードの立ち入り禁止テープ風背景処理
-        // -------------------------------------------------------------
         const colorPalette = {
             "赤": "#f8d7da",
             "緑": "#d4edda",
             "青": "#cce5ff",
             "紫": "#e2d9f3",
-            "黒": "#555555", // // 立ち入り禁止テープ風に黒色をはっきり強調
+            "黒": "#555555", 
             "黄": "#ffecb3"
         };
 
-        // // 色文字列（単色 or "赤/緑"などの混色）から対応するCSSクラス/スタイルを生成
         function getColorClass(c) {
             if (!c) return { isMulti: false, className: "" };
             
-            // // 混色（スラッシュ区切り）の場合：45度斜めストライプ（立ち入り禁止テープ風）のインラインCSSを生成
             if (c.includes("/")) {
                 const colors = c.split("/").map(s => s.trim());
                 if (colors.length >= 2) {
@@ -386,7 +405,6 @@
                 }
             }
             
-            // // 単色の場合：濃色スタイルのCSSクラスを返す
             const m = { "赤": "color-red", "緑": "color-green", "青": "color-blue", "紫": "color-purple", "黒": "color-black", "黄": "color-yellow" };
             return { isMulti: false, className: m[c] || "" };
         }
@@ -394,38 +412,30 @@
         const chartColorMap = { "赤": "#e53935", "緑": "#43a047", "青": "#1e88e5", "紫": "#8e24aa", "黒": "#424242", "黄": "#fdd835", "多": "#8d6e63" };
         function toHalfWidthKana(s) { const m = { "リーダー": "ﾘｰﾀﾞｰ", "キャラ": "ｷｬﾗ", "イベント": "ｲﾍﾞﾝﾄ", "ステージ": "ｽﾃｰｼﾞ", "ドン!!": "ﾄﾞﾝ!!" }; return m[s] || s; }
 
-        // // デッキ内のリーダーの色を取得（空白スペースを除去して正しく配列化）
         function getLeaderColors() {
             const leader = deckData.find(c => c.kind === "リーダー" && c.count > 0);
             if (!leader) return [];
-            // スラッシュで分割し、それぞれの前後の空白（スペース）を trim() で綺麗に取り除く
             return leader.color.split("/").map(s => s.trim());
         }
 
-        // // カードの色が現在のリーダーで使用可能か判定
         function isValidColorForDeck(cardColor) {
             const leaderColors = getLeaderColors();
             if (leaderColors.length === 0) return true;
-            
-            // カード側も同様にスペースをトリムして比較
             const cColors = cardColor.split("/").map(s => s.trim());
             return cColors.every(c => leaderColors.includes(c));
         }
 
-        // // アコーディオン詳細表示の切り替え
         function toggleDetail(i) {
             const row = document.getElementById(`detail-${i}`);
             row.style.display = row.style.display === "table-row" ? "none" : "table-row";
         }
 
-        // // デッキ内のカード枚数変更
         function updateCount(id, val) {
             const countVal = parseInt(val, 10);
             const targetIndex = deckData.findIndex(c => c.id === id);
             
             if (targetIndex !== -1) {
-                if (countVal === 0) {
-                    // // 枚数を0にしたらデッキから除外（リーダーも外せるように対応）
+                if (countVal === 0 && deckData[targetIndex].kind === "リーダー") {
                     deckData.splice(targetIndex, 1);
                 } else {
                     deckData[targetIndex].count = countVal;
@@ -434,7 +444,6 @@
             }
         }
 
-        // // 削除（✖）ボタンを押した際の処理
         function removeCard(id) {
             const card = deckData.find(c => c.id === id);
             if (!card) return;
@@ -443,42 +452,103 @@
             const msg = isLeader ? "リーダーを外しますか？" : "削除しますか？";
 
             if (confirm(msg)) {
-                // // リーダーか否かにかかわらず安全に配列から完全に削除
                 deckData = deckData.filter(c => c.id !== id);
                 renderDeck();
             }
         }
 
-        // -------------------------------------------------------------
-        // // 【デッキテーブル描画】現在のデッキデータを画面テーブルに反映
-        // -------------------------------------------------------------
+        function moveCard(id, direction) {
+            if (currentSortKey !== "default") {
+                document.getElementById("sort-key").value = "default";
+                currentSortKey = "default";
+            }
+
+            let leader = deckData.find(c => c.kind === "リーダー");
+            let others = deckData.filter(c => c.kind !== "リーダー");
+            
+            const index = others.findIndex(c => c.id === id);
+            if (index === -1) return;
+            
+            const newIndex = index + direction;
+            if (newIndex < 0 || newIndex >= others.length) return; 
+            
+            const target = others[index];
+            others.splice(index, 1);
+            others.splice(newIndex, 0, target);
+            
+            deckData = leader ? [leader, ...others] : others;
+            renderDeck();
+        }
+
+        function applySortAndRender() {
+            currentSortKey = document.getElementById("sort-key").value;
+            currentSortOrder = document.getElementById("sort-order").value;
+            renderDeck();
+        }
+
+        // 型番【】表示のON/OFF切り替え
+        function toggleShowId() {
+            showCardId = !showCardId;
+            const btn = document.getElementById("toggle-id-btn");
+            if (showCardId) {
+                btn.innerText = "型番【】表示: ON";
+                btn.classList.add("active");
+            } else {
+                btn.innerText = "型番【】表示: OFF";
+                btn.classList.remove("active");
+            }
+            renderDeck();
+        }
+
         function renderDeck() {
             const tbody = document.getElementById("deck-list");
             tbody.innerHTML = "";
             
-            // // リーダーを常に一番上に配置
-            const leader = deckData.find(c => c.kind === "リーダー");
-            const others = deckData.filter(c => c.kind !== "リーダー");
+            let leader = deckData.find(c => c.kind === "リーダー");
+            let others = deckData.filter(c => c.kind !== "リーダー");
+
+            if (currentSortKey !== "default") {
+                others.sort((a, b) => {
+                    let valA, valB;
+                    if (currentSortKey === "cost") {
+                        valA = (a.cost === "-" || a.cost === "") ? 99 : parseInt(a.cost, 10);
+                        valB = (b.cost === "-" || b.cost === "") ? 99 : parseInt(b.cost, 10);
+                    } else if (currentSortKey === "power") {
+                        valA = (a.power === "-" || a.power === "") ? -1 : parseInt(a.power, 10);
+                        valB = (b.power === "-" || b.power === "") ? -1 : parseInt(b.power, 10);
+                    } else if (currentSortKey === "color") {
+                        valA = a.color || "";
+                        valB = b.color || "";
+                    }
+
+                    if (valA < valB) return currentSortOrder === "asc" ? -1 : 1;
+                    if (valA > valB) return currentSortOrder === "asc" ? 1 : -1;
+                    return 0;
+                });
+            }
+
             const sortedDeck = leader ? [leader, ...others] : others;
 
             sortedDeck.forEach((card, idx) => {
                 const isL = card.kind === "リーダー";
+                const isZero = (card.count === 0 && !isL);
                 
-                // // 色に応じた背景クラス／斜めストライプ（立ち入り禁止テープ風）スタイルの取得
                 const colorInfo = getColorClass(card.color);
-                const rowCls = (colorInfo.isMulti ? "color-multi-stripe" : colorInfo.className) + (isL ? " leader-border" : "");
-                const inlineStyle = colorInfo.isMulti ? colorInfo.style : "";
+                let rowCls = (colorInfo.isMulti ? "color-multi-stripe" : colorInfo.className) + (isL ? " leader-border" : "");
+                let inlineStyle = colorInfo.isMulti ? colorInfo.style : "";
+                if (isZero) inlineStyle += " opacity: 0.4;";
 
                 const pwr = (card.power === "-" || card.power == null) ? "-" : card.power;
                 const cnt = (card.counter === "-" || card.counter == null) ? "-" : card.counter;
                 
+                // カード名テキストの構築（型番ON/OFF判定）
+                const nameDisp = showCardId ? `[${card.id}] ${card.name}` : card.name;
+
                 const trMain = document.createElement("tr");
                 trMain.className = `main-row ${rowCls}`;
                 if (inlineStyle) trMain.setAttribute("style", inlineStyle);
                 trMain.onclick = () => toggleDetail(idx);
-                if (!isL) trMain.dataset.id = card.id;
 
-                // // 枚数選択セレクトボックス（リーダーの場合は 1 または 0(外す) を選択可能）
                 let selHtml = "";
                 if (isL) {
                     selHtml = `<select onclick="event.stopPropagation()" onchange="updateCount('${card.id}', this.value)">
@@ -490,109 +560,42 @@
                     selHtml += `</select>`;
                 }
 
-                const handleHtml = isL ? '-' : '<span class="drag-handle" title="ドラッグして並び替え">☰</span>';
+                let moveHtml = '-';
+                if (!isL) {
+                    moveHtml = `<div style="display:flex; justify-content:center; gap:2px;">
+                        <button class="move-btn" onclick="event.stopPropagation(); moveCard('${card.id}', -1)" title="上へ">▲</button>
+                        <button class="move-btn" onclick="event.stopPropagation(); moveCard('${card.id}', 1)" title="下へ">▼</button>
+                    </div>`;
+                }
 
+                // コスト(3列目) と パワー(5列目) に bold-cell クラスを付与して太字化
                 trMain.innerHTML = `
-                    <td>${handleHtml}</td><td>${selHtml}</td><td>${isL ? '-' : card.cost}</td><td class="name-cell">[${card.id}] ${card.name}</td>
-                    <td>${pwr}</td><td class="kind-cell">${toHalfWidthKana(card.kind)}</td>
+                    <td>${moveHtml}</td>
+                    <td>${selHtml}</td>
+                    <td class="bold-cell">${isL ? '-' : card.cost}</td>
+                    <td class="name-cell">${nameDisp}</td>
+                    <td class="bold-cell">${pwr}</td>
+                    <td class="kind-cell">${toHalfWidthKana(card.kind)}</td>
                     <td onclick="event.stopPropagation()"><button class="btn-delete" onclick="removeCard('${card.id}')">✖</button></td>
                 `;
                 tbody.appendChild(trMain);
 
-                // // アコーディオン展開用詳細行
                 const trDet = document.createElement("tr");
                 trDet.id = `detail-${idx}`;
                 trDet.className = `detail-row`;
                 trDet.innerHTML = `<td colspan="7"><div class="detail-content">
-                    <span class="detail-badge">色: ${card.color}</span><span class="detail-badge">特徴: ${card.feature || "-"}</span><span class="detail-badge">カウンター: ${cnt}</span>
-                    <div style="margin-top: 6px;">${(card.text || "").replace(/\n/g, '<br>')}</div>
+                    <span class="detail-badge">型番: ${card.id}</span>
+                    <span class="detail-badge">色: ${card.color}</span>
+                    <span class="detail-badge">特徴: ${card.feature || "-"}</span>
+                    <span class="detail-badge">カウンター: ${cnt}</span>
+                    <div style="margin-top: 4px;">${(card.text || "").replace(/\n/g, '<br>')}</div>
                 </div></td>`;
                 tbody.appendChild(trDet);
             });
 
-            initDragAndDrop();
             renderStats();
         }
 
-        // // ドラッグ＆ドロップによるメインデッキ並び替え
-        function initDragAndDrop() {
-            const tbody = document.getElementById("deck-list");
-            let draggedRow = null;
-
-            tbody.querySelectorAll('.drag-handle').forEach(handle => {
-                handle.addEventListener('pointerdown', (e) => {
-                    e.stopPropagation();
-                    const mainRow = e.target.closest('tr.main-row');
-                    if (!mainRow) return;
-
-                    draggedRow = mainRow;
-                    draggedRow.style.opacity = '0.4';
-                    
-                    const detailRow = draggedRow.nextElementSibling;
-                    if (detailRow && detailRow.classList.contains('detail-row')) {
-                        detailRow.style.display = 'none';
-                    }
-
-                    handle.setPointerCapture(e.pointerId);
-                });
-
-                handle.addEventListener('pointermove', (e) => {
-                    if (!draggedRow) return;
-                    e.preventDefault();
-
-                    draggedRow.style.display = 'none';
-                    const targetElem = document.elementFromPoint(e.clientX, e.clientY);
-                    draggedRow.style.display = '';
-
-                    const targetRow = targetElem ? targetElem.closest('tr.main-row') : null;
-                    
-                    if (targetRow && targetRow !== draggedRow && !targetRow.classList.contains('leader-border')) {
-                        const rect = targetRow.getBoundingClientRect();
-                        const isAfter = (e.clientY - rect.top) / (rect.bottom - rect.top) > 0.5;
-                        const draggedDetail = draggedRow.nextElementSibling && draggedRow.nextElementSibling.classList.contains('detail-row') ? draggedRow.nextElementSibling : null;
-
-                        if (isAfter) {
-                            targetRow.parentNode.insertBefore(draggedRow, targetRow.nextSibling.nextSibling || targetRow.nextSibling);
-                            if (draggedDetail) targetRow.parentNode.insertBefore(draggedDetail, draggedRow.nextSibling);
-                        } else {
-                            targetRow.parentNode.insertBefore(draggedRow, targetRow);
-                            if (draggedDetail) targetRow.parentNode.insertBefore(draggedDetail, draggedRow.nextSibling);
-                        }
-                    }
-                });
-
-                const endDrag = (e) => {
-                    if (!draggedRow) return;
-                    updateDeckDataOrder();
-                    renderDeck();
-                    draggedRow = null;
-                    try { handle.releasePointerCapture(e.pointerId); } catch (err) {}
-                };
-
-                handle.addEventListener('pointerup', endDrag);
-                handle.addEventListener('pointercancel', endDrag);
-            });
-        }
-
-        // // 並び替え順を内部データ（deckData）に同期
-        function updateDeckDataOrder() {
-            const tbody = document.getElementById("deck-list");
-            const mainRows = tbody.querySelectorAll('tr.main-row');
-            let newOthers = [];
-            
-            mainRows.forEach(row => {
-                const id = row.dataset.id;
-                if (id) {
-                    const card = deckData.find(c => c.id === id);
-                    if (card) newOthers.push(card);
-                }
-            });
-
-            const leader = deckData.find(c => c.kind === "リーダー");
-            deckData = leader ? [leader, ...newOthers] : newOthers;
-        }
-
-        // // 統計グラフ（コストカーブ・カウンター値）描画
         function renderStats() {
             const maxCost = 10; const orderedColors = ["赤", "緑", "青", "紫", "黒", "黄", "多"];
             const costsData = Array.from({length: maxCost + 1}, () => ({}));
@@ -636,7 +639,6 @@
             `;
         }
 
-        // // 初手ドローシミュレーター機能
         let simDeck = [];
         function initSimDeck() {
             simDeck = [];
@@ -674,9 +676,6 @@
             document.getElementById("deck-count-display").innerText = `残り山札: ${simDeck.length}枚`;
         }
 
-        // -------------------------------------------------------------
-        // // 【カード検索モーダル】条件指定検索・フィルタリング処理
-        // -------------------------------------------------------------
         function openSearch() {
             document.getElementById("search-modal").style.display = "block";
             const lColors = getLeaderColors();
@@ -697,7 +696,6 @@
         
         function closeSearch() { document.getElementById("search-modal").style.display = "none"; }
         
-        // // リアルタイム多角条件フィルタ検索の実行
         function executeSearch() {
             const sName = document.getElementById("sq-name").value.toLowerCase();
             const sExpansion = document.getElementById("sq-expansion").value;
@@ -753,13 +751,11 @@
                 const pwrDisp = (card.power === "-" || card.power == null) ? "-" : card.power;
                 const cntDisp = (card.counter === "-" || card.counter == null) ? "-" : card.counter;
                 
-                // 色情報の取得（単色クラス or 混色スタイル）
                 const colorInfo = getColorClass(card.color);
                 const cardCls = colorInfo.isMulti ? "color-multi-stripe" : colorInfo.className;
                 const inlineStyle = colorInfo.isMulti ? colorInfo.style : "";
 
                 const div = document.createElement("div");
-                // result-card とカラー用クラス（color-red, color-green等）をあわせて付与
                 div.className = `result-card ${cardCls}`;
                 if (inlineStyle) {
                     div.setAttribute("style", inlineStyle);
@@ -791,11 +787,9 @@
             document.getElementById("search-count-info").innerText = `該当: ${matchCount} 件`;
         }
 
-        // // 検索画面からデッキへ追加
         function addCardToDeck(id) {
             const card = masterCatalog.find(c => c.id === id);
             if(card) {
-                // // リーダーを新しく追加する場合は既存のリーダーと置換
                 if (card.kind === "リーダー") {
                     deckData = deckData.filter(c => c.kind !== "リーダー");
                 }
@@ -805,9 +799,6 @@
             }
         }
 
-        // -------------------------------------------------------------
-        // // 【データ保存・共有】LocalStorage / URLハッシュ同期機能
-        // -------------------------------------------------------------
         function openSaveModal() {
             document.getElementById("save-modal").style.display = "block";
             renderSavedDecksList();
@@ -881,7 +872,6 @@
             }
         }
 
-        // // 現在のデッキ状態をBase64に暗号エンコードして共有URLを作成
         function copyShareUrl() {
             let deckMap = {};
             deckData.forEach(c => {
@@ -906,7 +896,6 @@
             }
         }
 
-        // // URLハッシュからデッキ構成を自動デコード復元
         function loadDeckFromUrlHash() {
             const hash = window.location.hash;
             if (!hash.includes("#deck=")) return false;
@@ -933,9 +922,6 @@
             return false;
         }
 
-        // -------------------------------------------------------------
-        // // 【買い物リスト】所持数入力と必要購入枚数の自動計算
-        // -------------------------------------------------------------
         function updateOwned(id, val) {
             ownedCards[id] = parseInt(val, 10) || 0;
             renderShoppingList(); 
@@ -958,7 +944,7 @@
 
             const ids = Object.keys(reqMap);
             if(ids.length === 0) {
-                summaryDiv.innerText = "必要枚数: 0枚 / 買う枚数: 0枚";
+                summaryDiv.innerText = "総必要枚数: 0枚 ／ 合計買う枚数: 0枚";
                 container.innerHTML = '<div style="color:#888; text-align:center; padding:20px;">デッキにカードがありません</div>';
                 return;
             }
@@ -996,7 +982,6 @@
             summaryDiv.innerText = `総必要枚数: ${totalReq}枚 ／ 合計買う枚数: ${totalBuy}枚`;
         }
 
-        // // アプリ全体初期化の実行
         initApp();
     </script>
 </body>
