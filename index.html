@@ -12,14 +12,13 @@
   gtag('js', new Date());
 </script>
 
-
 <!-- OGP・Twitterカード設定 -->
     <meta property="og:url" content="https://あなたのGitHubPagesのURL/">
     <meta property="og:type" content="website">
     <meta property="og:title" content="OPCGvault - ワンピカードデッキビルダー">
     <meta property="og:description" content="サクサク動くワンピカード非公式デッキビルダー＆買い物リスト作成ツール！スマホのホーム画面に追加(PWA)でネイティブアプリのように使えます。">
     <meta property="og:image" content="https://あなたのGitHubPagesのURL/icon.png">
-    <meta name="twitter:card" content="summary"> <!-- もし横長の大きな画像を用意できるなら summary_large_image に変更 -->
+    <meta name="twitter:card" content="summary">
     
     <!-- PWA用の設定 -->
     <link rel="manifest" href="manifest.json">
@@ -43,6 +42,19 @@
         
         .view-section { display: none; }
         .view-section.active { display: block; }
+
+        /* ★NEW: 共通ローディングエリアのスタイル */
+        #loading-status {
+            text-align: center;
+            padding: 10px;
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeeba;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
 
         /* デッキ一覧テーブル等 */
         table { border-collapse: collapse; width: 100%; margin-bottom: 20px; font-size: 12px; }
@@ -133,7 +145,7 @@
         
         /* タイトルと日付を縦に並べるエリア */
         .article-header-left { display: flex; flex-direction: column; flex: 1; gap: 4px; }
-        .article-date { font-size: 11px; color: #888; }
+        .article-date { font-size: 11px; color: #888; display: flex; align-items: center; }
         .article-title { font-weight: bold; color: #1e88e5; font-size: 16px; line-height: 1.3; }
         
         .article-meta { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
@@ -150,7 +162,7 @@
         .footer-disclaimer a { color: #d32f2f; font-weight: bold; font-size: 14px; text-decoration: underline; cursor: pointer; }
         .footer-report-btn { padding: 10px 20px; background-color: #1e88e5; color: #fff; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px; }
         
-        /* 【NEW】X（Twitter）シェア用ボタン */
+        /* X（Twitter）シェア用ボタン */
         .footer-share-btn { padding: 10px 20px; background-color: #000; color: #fff; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px; }
         
         .report-form { display: flex; flex-direction: column; gap: 15px; margin-top: 15px; }
@@ -167,10 +179,14 @@
     </div>
 
     <div class="container">
+        
+        <!-- ★共通ローディング表示（どのタブを開いていても見える位置に移動） -->
+        <div id="loading-status">
+            データを読み込んでいます...<br>
+        </div>
+
         <!-- デッキ構築画面 -->
         <div id="view-deck" class="view-section active">
-            <p style="margin-top:0; font-size:12px; color:#666;" id="loading-status">※データを読み込んでいます...</p>
-
             <div style="margin-bottom: 8px; display: flex; gap: 8px; align-items: center; font-size: 12px; background: #f5f5f5; padding: 6px; border-radius: 4px; justify-content: space-between;">
                 <div style="display: flex; gap: 6px; align-items: center;">
                     <span><b>並び替え:</b></span>
@@ -246,55 +262,16 @@
             </div>
         </div>
 
-        <!-- 【NEW】みんなのデッキ画面 -->
+        <!-- みんなのデッキ画面 -->
         <div id="view-community" class="view-section">
             <h2 style="margin-top: 0;">みんなのデッキ</h2>
-            <p style="font-size: 13px; color: #555; margin-bottom: 10px;">他のプレイヤーが投稿したデッキレシピです。<br>「読込」を押すと、あなたの構築画面にコピーできます。</p>
-            
-            <!-- ▼▼ 検索・フィルターUI ▼▼ -->
-            <div style="background: #f5f5f5; border: 1px solid #ddd; padding: 10px; border-radius: 6px; margin-bottom: 15px; font-size: 12px; display: flex; flex-direction: column; gap: 8px;">
-                <!-- 1. デッキ名・作成者 ＆ 2-1. リーダー名 -->
-                <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-                    <input type="text" id="comm-search-keyword" placeholder="デッキ名・作成者で検索..." style="flex: 1; min-width: 130px; padding: 5px;" oninput="applyCommunityFilter()">
-                    <input type="text" id="comm-search-leader-name" placeholder="リーダー名（例: ゾロ）" style="flex: 1; min-width: 130px; padding: 5px;" oninput="applyCommunityFilter()">
-                </div>
-
-                <!-- 2-2. 収録弾プルダウン ＆ 3. 含まれているカード -->
-                <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-                    <select id="comm-search-expansion" style="padding: 5px; flex-shrink: 0;" onchange="applyCommunityFilter()">
-                        <option value="">収録弾: すべて</option>
-                    </select>
-                    <input type="text" id="comm-search-card" placeholder="含まれているカード名・型番（例: シャンクス）" style="flex: 1; min-width: 160px; padding: 5px;" oninput="applyCommunityFilter()">
-                </div>
-
-                <!-- 色フィルター & AND/OR切替 -->
-                <div style="display: flex; flex-direction: column; gap: 4px; border-top: 1px dashed #ccc; padding-top: 6px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
-                        <span><b>色フィルター:</b></span>
-                        <div style="display: flex; gap: 10px; align-items: center;">
-                            <label style="cursor: pointer;"><input type="radio" name="comm-color-mode" value="or" checked onchange="applyCommunityFilter()"> いずれかの色を含む (OR)</label>
-                            <label style="cursor: pointer;"><input type="radio" name="comm-color-mode" value="and" onchange="applyCommunityFilter()"> 指定した色をすべて含む (AND)</label>
-                        </div>
-                    </div>
-                    <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 2px;">
-                        <label style="cursor: pointer;"><input type="checkbox" name="comm-color" value="赤" onchange="applyCommunityFilter()"> 赤</label>
-                        <label style="cursor: pointer;"><input type="checkbox" name="comm-color" value="緑" onchange="applyCommunityFilter()"> 緑</label>
-                        <label style="cursor: pointer;"><input type="checkbox" name="comm-color" value="青" onchange="applyCommunityFilter()"> 青</label>
-                        <label style="cursor: pointer;"><input type="checkbox" name="comm-color" value="紫" onchange="applyCommunityFilter()"> 紫</label>
-                        <label style="cursor: pointer;"><input type="checkbox" name="comm-color" value="黒" onchange="applyCommunityFilter()"> 黒</label>
-                        <label style="cursor: pointer;"><input type="checkbox" name="comm-color" value="黄" onchange="applyCommunityFilter()"> 黄</label>
-                    </div>
-                </div>
-            </div>
-            <!-- ▲▲ 検索・フィルターUIここまで ▲▲ -->
-
-            <div id="comm-count-info" style="font-size: 12px; color: #555; margin-bottom: 8px; text-align: right;"></div>
+            <p style="font-size: 13px; color: #555;">他のプレイヤーが投稿したデッキレシピです。<br>「読込」を押すと、あなたの構築画面にコピーできます。</p>
             
             <!-- スプレッドシートから読み込んだデッキがここに入る -->
             <div id="community-decks-container"></div>
         </div>
 
-        <!-- 【NEW】読み物・使い方（AdSense対策 兼 記事エリア） -->
+        <!-- 読み物・使い方 -->
         <div id="view-content" class="view-section">
             <h2>OPCGvaultとは？（使い方）</h2>
             <div style="font-size: 14px; line-height: 1.6; color: #444; margin-bottom: 30px;">
@@ -331,11 +308,9 @@
             <a onclick="openTermsModal()">※ご利用前に必ずお読みください（免責事項等）</a>
             <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
                 <button class="footer-report-btn" onclick="openReportModal()">💬 ご意見・バグ報告</button>
-                <!-- 【NEW】サイト宣伝用のXシェアボタン -->
                 <button class="footer-share-btn" onclick="shareSiteToX()">𝕏 サイトをシェアする</button>
             </div>
         </div>
-    </div>
 
 
     <!-- ================= モーダル群 ================= -->
@@ -406,7 +381,6 @@
             <span class="close" onclick="closeSaveModal()">&times;</span>
             <h3 style="margin-top:0;">デッキの保存・読み込み・共有</h3>
             
-            <!-- ▼▼ ローカル保存＆投稿エリア ▼▼ -->
             <div style="margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
                 <div style="font-weight: bold; margin-bottom: 5px;">ローカル保存 ＆ 投稿</div>
                 <input type="text" id="deck-name-input" placeholder="デッキ名を入力" style="width: calc(100% - 90px); padding: 6px; margin-bottom: 5px;">
@@ -416,7 +390,6 @@
                 </label>
                 <button onclick="saveCurrentDeck()" style="padding: 8px 15px; background: #333; color: #fff; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">保存を実行</button>
             </div>
-            <!-- ▲▲ ここまで ▲▲ -->
 
             <div style="margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
                 <div style="font-weight: bold; margin-bottom: 5px;">URL共有</div>
@@ -473,6 +446,14 @@
         </div>
     </div>
 
+    <!-- 画像拡大モーダル -->
+    <div id="image-modal" class="modal" onclick="closeImageModal()">
+        <div class="modal-content" style="background: transparent; border: none; box-shadow: none; text-align: center; margin: 10% auto; padding: 0;" onclick="event.stopPropagation()">
+            <span class="close" onclick="closeImageModal()" style="color: #fff; text-shadow: 1px 1px 2px #000; position: absolute; right: 10px; top: -30px;">&times;</span>
+            <img id="expanded-image" src="" alt="拡大画像" style="max-width: 100%; max-height: 80vh; border-radius: 8px;">
+        </div>
+    </div>
+
 
     <script>
         const GAS_API_URL = 'https://script.google.com/macros/s/AKfycby9fTpT4-i79WnJ3Utgx4MW-khWoLee8blbgQUWfHNiZGD3lqD6ydG_NlF2_k6APm3n/exec';
@@ -483,11 +464,7 @@
         let currentSortKey = "default";
         let currentSortOrder = "asc";
         let showCardId = true; 
-        let allCommunityDecksRaw = []; // みんなのデッキの全データキャッシュ用
 
-        // -------------------------------------------------------------
-        // PWA用のService Worker登録
-        // -------------------------------------------------------------
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', function() {
                 navigator.serviceWorker.register('sw.js').then(function(registration) {
@@ -530,15 +507,11 @@
                     };
                 });
 
+                // ★データ取得成功でローディング非表示
                 document.getElementById("loading-status").style.display = "none";
                 
-                // 読み物データの描画
                 renderArticles(articlesRawData);
-                
-                // みんなのデッキ保持＆初期化
-                allCommunityDecksRaw = communityDecksRaw;
-                initCommunityExpansionSelect();
-                applyCommunityFilter();
+                renderCommunityDecks(communityDecksRaw);
 
                 const loadedFromHash = loadDeckFromUrlHash();
                 if (!loadedFromHash && masterCatalog.length > 0) deckData = []; 
@@ -547,33 +520,39 @@
                 renderDeck();
             } catch (err) {
                 console.error(err);
-                document.getElementById("loading-status").innerHTML = "<span style='color:red;'>スプレッドシートデータの取得に失敗しました。</span>";
+                // エラー時も共通エリアでお知らせする
+                document.getElementById("loading-status").innerHTML = "<span style='color:red;'>スプレッドシートデータの取得に失敗しました。時間をおいて再読み込みしてください。</span>";
             }
         }
 
-        // -------------------------------------------------------------
-        // 読み物（アコーディオン）処理
-        // -------------------------------------------------------------
         function toggleArticle(element) {
             const card = element.closest('.article-card');
             card.classList.toggle('open');
         }
+        
+        function showImageModal(src) {
+            document.getElementById("expanded-image").src = src;
+            document.getElementById("image-modal").style.display = "block";
+        }
 
-        // -------------------------------------------------------------
-        // 読み物データの描画（画像URLの自動変換対応）
-        // -------------------------------------------------------------
+        function closeImageModal() {
+            document.getElementById("image-modal").style.display = "none";
+        }
+
         function renderArticles(articles) {
             const container = document.getElementById("dynamic-articles-container");
-            if (!container) return; 
-            if (!articles || articles.length === 0) return; 
+            if (!container) return;
+            if (!articles || articles.length === 0) return;
 
             let html = "";
-            articles.forEach(art => {
+            const now = new Date().getTime();
+
+            [...articles].reverse().forEach(art => {
                 const title = art['タイトル'] || '無題';
-                
                 let rawBody = art['本文'] || '';
+                
                 const imgRegex = /(https?:\/\/[^\s]+?\.(?:jpg|jpeg|png|gif|webp))/gi;
-                rawBody = rawBody.replace(imgRegex, '<img src="$1" style="max-width: 100%; border-radius: 8px; margin: 10px 0; display: block;">');
+                rawBody = rawBody.replace(imgRegex, '<img src="$1" style="max-width: 100%; border-radius: 8px; margin: 10px 0; display: block; cursor: zoom-in;" onclick="showImageModal(this.src)">');
                 
                 const body = rawBody.replace(/\n/g, '<br>');
                 const author = art['筆者'] ? `✍️ ${art['筆者']}` : '';
@@ -581,7 +560,16 @@
                 let dateStr = art['日付'] || '';
                 if (dateStr.includes('T')) dateStr = dateStr.split('T')[0].replace(/-/g, '/');
                 
-                const dateHtml = dateStr ? `<div class="article-date">${dateStr}</div>` : '';
+                let newBadgeHtml = "";
+                if (dateStr) {
+                    const articleTime = new Date(dateStr.replace(/\//g, '-')).getTime();
+                    const diffDays = (now - articleTime) / (1000 * 60 * 60 * 24);
+                    if (diffDays <= 3) {
+                        newBadgeHtml = `<span style="background: #e53935; color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; margin-left: 6px;">NEW!</span>`;
+                    }
+                }
+                
+                const dateHtml = dateStr ? `<div class="article-date">${dateStr}${newBadgeHtml}</div>` : '';
                 
                 html += `<div class="article-card">
                             <div class="article-header" onclick="toggleArticle(this)">
@@ -600,29 +588,11 @@
             container.innerHTML = html;
         }
 
-        // -------------------------------------------------------------
-        // デッキ構築・その他UI機能
-        // -------------------------------------------------------------
         function initExpansionSelect() {
             const expansions = [...new Set(masterCatalog.map(c => c.id.split('-')[0]))].sort();
             const select = document.getElementById("sq-expansion");
             select.innerHTML = '<option value="">すべて</option>';
             expansions.forEach(exp => { select.insertAdjacentHTML('beforeend', `<option value="${exp}">${exp}</option>`); });
-        }
-
-        // みんなのデッキ用「収録弾」プルダウンの初期化
-        function initCommunityExpansionSelect() {
-            const select = document.getElementById("comm-search-expansion");
-            if (!select) return;
-            const expansions = [...new Set(masterCatalog.map(c => c.id.split('-')[0]))].sort();
-            select.innerHTML = '<option value="">収録弾: すべて</option>';
-            expansions.forEach(exp => {
-                let expDisp = exp;
-                if (exp.match(/^[A-Z]+\d+$/)) {
-                    expDisp = exp.replace(/([A-Z]+)(\d+)/, "$1-$2");
-                }
-                select.insertAdjacentHTML('beforeend', `<option value="${exp}">${expDisp}</option>`);
-            });
         }
 
         function switchTab(tabId) {
@@ -1007,12 +977,10 @@
             
             if(!deckName) return alert("デッキ名を入力してください。");
             
-            // 1. ローカル保存処理
             const decks = getSavedDecks();
             decks[deckName] = { updatedAt: new Date().toLocaleString(), cards: deckData };
             localStorage.setItem('onepiece_vault_decks', JSON.stringify(decks));
             
-            // 2. 投稿チェックが入っている場合の処理
             if (isPublish) {
                 let deckMap = {};
                 deckData.forEach(c => { if (c.count > 0) deckMap[c.id] = c.count; });
@@ -1207,120 +1175,62 @@
             .finally(() => { btn.disabled = false; btn.innerText = "送信する"; });
         }
 
-	// -------------------------------------------------------------
-        // X(Twitter)へサイトを共有する
-        // -------------------------------------------------------------
         function shareSiteToX() {
             const siteUrl = "https://hakurerez.github.io/"; 
             const text = "サクサク動くワンピカード非公式デッキビルダー＆買い物リスト作成ツール「OPCGvault」\nスマホのホーム画面に追加(PWA)でネイティブアプリのように使えます。\n";
             const hashtags = "ワンピカード,OPCGvault";
-            
             const shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(siteUrl)}&hashtags=${encodeURIComponent(hashtags)}`;
             window.open(shareUrl, '_blank', 'noopener,noreferrer');
         }
 
-        // -------------------------------------------------------------
-        // みんなのデッキ（フィルター＆検索処理）
-        // -------------------------------------------------------------
-        function applyCommunityFilter() {
-            if (!allCommunityDecksRaw || allCommunityDecksRaw.length === 0) {
-                renderCommunityDecks([]);
-                return;
+        function submitDeckUrl() {
+            const deckName = document.getElementById("submit-deck-name").value.trim();
+            const author = document.getElementById("submit-deck-author").value.trim() || "名無しプレイヤー";
+            if(!deckName) return alert("デッキ名を入力してください。");
+
+            let deckMap = {};
+            deckData.forEach(c => { if (c.count > 0) deckMap[c.id] = c.count; });
+            if (Object.keys(deckMap).length === 0) return alert("デッキにカードがありません！");
+
+            const jsonStr = JSON.stringify(deckMap);
+            const encoded = btoa(unescape(encodeURIComponent(jsonStr)));
+            const shareUrl = `${window.location.origin}${window.location.pathname}#deck=${encoded}`;
+
+            const now = Date.now();
+            let reportData = JSON.parse(localStorage.getItem('opcg_report_data') || '{"date":"","count":0,"lastTime":0}');
+            if (reportData.lastTime > 0 && (now - reportData.lastTime < 5 * 60 * 1000)) {
+                return alert("連続投稿を制限しています。前回から5分以上空けて再度お試しください。");
             }
 
-            const keyword = (document.getElementById("comm-search-keyword")?.value || "").toLowerCase().trim();
-            const leaderNameQuery = (document.getElementById("comm-search-leader-name")?.value || "").toLowerCase().trim();
-            const selectedExp = document.getElementById("comm-search-expansion")?.value || "";
-            const cardKeyword = (document.getElementById("comm-search-card")?.value || "").toLowerCase().trim();
-            
-            const checkedColors = Array.from(document.querySelectorAll('input[name="comm-color"]:checked')).map(cb => cb.value);
-            const colorMode = document.querySelector('input[name="comm-color-mode"]:checked')?.value || "or";
+            if(!confirm(`以下のデッキを投稿しますか？\nデッキ名：${deckName}\n作成者：${author}`)) return;
 
-            const filtered = allCommunityDecksRaw.filter(d => {
-                const title = (d['デッキ名'] || '').toLowerCase();
-                const author = (d['作成者'] || '').toLowerCase();
-                const url = d['データ'] || '';
-
-                // 1. デッキ名・作成者検索
-                if (keyword && !title.includes(keyword) && !author.includes(keyword)) {
-                    return false;
-                }
-
-                if (!url.includes("#deck=")) return false;
-
-                try {
-                    const encoded = url.split("#deck=")[1];
-                    const jsonStr = decodeURIComponent(escape(atob(encoded)));
-                    const deckMap = JSON.parse(jsonStr);
-                    
-                    const deckCardIds = Object.keys(deckMap);
-                    const deckCards = deckCardIds.map(id => masterCatalog.find(c => c.id === id)).filter(Boolean);
-                    const leaderCard = deckCards.find(c => c.kind === "リーダー");
-
-                    // 2-1. リーダー名検索
-                    if (leaderNameQuery) {
-                        if (!leaderCard || !leaderCard.name.toLowerCase().includes(leaderNameQuery)) {
-                            return false;
-                        }
-                    }
-
-                    // 2-2. 収録弾フィルター（リーダーの収録弾でチェック）
-                    if (selectedExp) {
-                        if (!leaderCard || !leaderCard.id.startsWith(selectedExp)) {
-                            return false;
-                        }
-                    }
-
-                    // 3. 色フィルター (AND / OR)
-                    if (checkedColors.length > 0) {
-                        let allColorsInDeck = new Set();
-                        deckCards.forEach(c => {
-                            if (c.color) {
-                                c.color.split('/').forEach(col => allColorsInDeck.add(col.trim()));
-                            }
-                        });
-
-                        if (colorMode === "or") {
-                            const hasAnyColor = checkedColors.some(col => allColorsInDeck.has(col));
-                            if (!hasAnyColor) return false;
-                        } else if (colorMode === "and") {
-                            const hasAllColors = checkedColors.every(col => allColorsInDeck.has(col));
-                            if (!hasAllColors) return false;
-                        }
-                    }
-
-                    // 4. 含まれているカード検索（カード名または型番）
-                    if (cardKeyword) {
-                        const hasMatchingCard = deckCards.some(c => 
-                            c.id.toLowerCase().includes(cardKeyword) || 
-                            c.name.toLowerCase().includes(cardKeyword)
-                        );
-                        if (!hasMatchingCard) return false;
-                    }
-
-                    return true;
-                } catch (e) {
-                    return false;
-                }
-            });
-
-            renderCommunityDecks(filtered);
+            fetch(GAS_API_URL, {
+                method: 'POST', headers: { 'Content-Type': 'text/plain' },
+                body: JSON.stringify({ 
+                    type: "デッキレシピ提供", 
+                    deckName: deckName, 
+                    author: author, 
+                    url: shareUrl 
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === "success") {
+                    alert("デッキを送信しました！管理人の承認後にサイトへ掲載されます。");
+                    reportData.lastTime = now;
+                    localStorage.setItem('opcg_report_data', JSON.stringify(reportData));
+                    document.getElementById("submit-deck-name").value = "";
+                    document.getElementById("submit-deck-author").value = "";
+                } else { alert("送信に失敗しました: " + data.message); }
+            })
+            .catch(err => { console.error(err); alert("通信エラーが発生しました。"); });
         }
 
-	// -------------------------------------------------------------
-        // みんなのデッキ（描画と読み込み）
-        // -------------------------------------------------------------
         function renderCommunityDecks(decks) {
             const container = document.getElementById("community-decks-container");
-            const countDiv = document.getElementById("comm-count-info");
             if (!container) return;
-
-            if (countDiv) {
-                countDiv.innerText = `該当: ${decks.length} 件`;
-            }
-
             if (!decks || decks.length === 0) {
-                container.innerHTML = '<div style="padding:15px; color:#666; text-align:center;">条件に合うデッキが見つかりませんでした。</div>';
+                container.innerHTML = '<div style="padding:15px; color:#666;">まだ投稿されたデッキはありません。最初の投稿者になりませんか？</div>';
                 return;
             }
 
@@ -1345,7 +1255,7 @@
                         for (let id in deckMap) {
                             const card = masterCatalog.find(c => c.id === id);
                             if (card && card.kind === "リーダー") {
-                                const exp = id.split('-')[0];
+                                const exp = id.split('-')[0]; 
                                 let expDisp = exp;
                                 if (exp.match(/^[A-Z]+\d+$/)) {
                                     expDisp = exp.replace(/([A-Z]+)(\d+)/, "$1-$2");
@@ -1355,7 +1265,7 @@
                                 const colorInfo = getColorClass(card.color);
                                 rowCls = colorInfo.isMulti ? "color-multi-stripe" : colorInfo.className;
                                 inlineStyle = colorInfo.isMulti ? colorInfo.style : "";
-                                break;
+                                break; 
                             }
                         }
                     } catch (e) {
@@ -1396,7 +1306,7 @@
                 
                 if (newDeckData.length > 0) { 
                     deckData = newDeckData; 
-                    switchTab('deck');
+                    switchTab('deck'); 
                     renderDeck(); 
                     alert("デッキを読み込みました！");
                 } else {
@@ -1407,7 +1317,6 @@
                 alert("デッキの読み込みに失敗しました。"); 
             }
         }
-
 
         initApp();
     </script>
