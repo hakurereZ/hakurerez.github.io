@@ -72,7 +72,7 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
 
-        /* ★NEW: スナックバー（通知） */
+        /* スナックバー（通知） */
         #toast-notification {
             visibility: hidden;
             min-width: 250px;
@@ -282,6 +282,28 @@
                 </table>
             </div>
 
+            <!-- 確率計算機 -->
+            <div class="sim-area" style="margin-bottom: 20px;">
+                <div style="font-weight: bold; margin-bottom: 10px;">サーチ＆ドロー確率計算機</div>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 10px; font-size: 13px;">
+                    <div>探す条件: 
+                        <select id="calc-condition-type" onchange="updateCalcConditionValues()">
+                            <option value="feature">特徴</option>
+                            <option value="attribute">属性 (打/斬/特/知)</option>
+                            <option value="kind">種類 (キャラ/イベント等)</option>
+                            <option value="counter">カウンター</option>
+                        </select>
+                        <select id="calc-condition-value" onchange="calculateProbability()"></select>
+                    </div>
+                    <div>めくる枚数:
+                        <input type="number" id="calc-draw-count" min="1" max="10" value="5" style="width: 40px; padding: 4px;" onchange="calculateProbability()"> 枚
+                    </div>
+                </div>
+                <div style="background: #fff; padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px;">
+                    対象: <b id="calc-target-count">0</b>枚 ／ 1枚以上ヒットする確率: <b id="calc-result-prob" style="color:#d32f2f; font-size:16px;">0.0%</b>
+                </div>
+            </div>
+
             <div class="sim-area">
                 <div style="font-weight: bold; margin-bottom: 10px;">初手確認シミュレーター（リーダー除外）</div>
                 <div class="sim-buttons">
@@ -381,6 +403,15 @@
                 
                 <label>色 (リーダー制限)
                     <select id="sq-color" onchange="executeSearch()"></select>
+                </label>
+                <label>属性
+                    <select id="sq-attribute" onchange="executeSearch()">
+                        <option value="">すべて</option>
+                        <option value="打">打</option>
+                        <option value="斬">斬</option>
+                        <option value="特">特</option>
+                        <option value="知">知</option>
+                    </select>
                 </label>
                 <label>種類
                     <select id="sq-kind" onchange="executeSearch()">
@@ -511,7 +542,6 @@
         let currentSortOrder = "asc";
         let showCardId = true; 
 
-        // スナックバーの表示関数
         function showToast(message) {
             const toast = document.getElementById("toast-notification");
             toast.innerText = message;
@@ -519,11 +549,9 @@
             setTimeout(() => { toast.className = toast.className.replace("show", ""); }, 3000);
         }
 
-        // PCからのアクセス時はPWAバナーを非表示にする
         function checkPwaDisplayMode() {
             const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
             const isIosStandalone = window.navigator.standalone === true;
-            
             const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
             if (isMobile && !isStandalone && !isIosStandalone) {
@@ -548,7 +576,6 @@
             let cachedDataStr = localStorage.getItem(CACHE_KEY);
             
             try {
-                // 1. キャッシュがあれば爆速で描画し、ローディングを消す
                 if (cachedDataStr) {
                     const cachedData = JSON.parse(cachedDataStr);
                     if (cachedData && (cachedData.cards || Array.isArray(cachedData))) {
@@ -558,15 +585,13 @@
                     }
                 }
 
-                // 2. 裏でGASへ最新データをフェッチ
                 const response = await fetch(GAS_API_URL);
                 const resultsData = await response.json();
                 const newDataStr = JSON.stringify(resultsData);
                 
-                // 3. 差分判定（キャッシュが無い、または差分がある場合のみ更新）
                 if (!hasCache || cachedDataStr !== newDataStr) {
                     localStorage.setItem(CACHE_KEY, newDataStr);
-                    applyMasterData(resultsData); // 最新データで再描画
+                    applyMasterData(resultsData);
                     
                     if (hasCache) {
                         showToast("✅ 最新データに同期しました");
@@ -618,7 +643,6 @@
 
             const loadedFromHash = loadDeckFromUrlHash();
             if (!loadedFromHash && masterCatalog.length > 0 && deckData.length === 0) {
-                // キャッシュ反映と初回起動の兼ね合いで初期化
             } 
 
             initExpansionSelect();
@@ -875,9 +899,8 @@
                 if (isL) {
                     selHtml = `<select onclick="event.stopPropagation()" onchange="updateCount('${card.id}', this.value)">
                                <option value="1" ${card.count==1?"selected":""}>1</option><option value="0">0 (外す)</option></select>`;
-               } else {
+                } else {
                     selHtml = `<select onclick="event.stopPropagation()" onchange="updateCount('${card.id}', this.value)">`;
-                    // ★NEW: テキストに「何枚でも入れる」が含まれていれば上限を50枚にする
                     let maxLimit = (card.text && card.text.includes("何枚でも入れる")) ? 50 : 4;
                     for(let i=0; i<=maxLimit; i++) selHtml += `<option value="${i}" ${card.count==i?"selected":""}>${i}</option>`;
                     selHtml += `</select>`;
@@ -925,7 +948,6 @@
                 totalCards += count;
             });
 
-            // ★NEW: 各コストの最大枚数を算出
             let maxCountInCost = 0;
             for(let c=0; c<=maxCost; c++) {
                 let costTotal = 0;
@@ -935,25 +957,22 @@
                 if(costTotal > maxCountInCost) maxCountInCost = costTotal;
             }
 
-            // ★NEW: 最大枚数に応じた動的スケーリングとグリッド線の決定
             let scaleMultiplier = 10;
-            let grids = [5, 10]; // デフォルト (15枚まで)
+            let grids = [5, 10]; 
             if (maxCountInCost > 30) {
-                scaleMultiplier = 150 / 45; // 約3.3px (45枚まで許容)
+                scaleMultiplier = 150 / 45; 
                 grids = [15, 30];
             } else if (maxCountInCost > 15) {
-                scaleMultiplier = 5; // 5px (30枚まで許容)
+                scaleMultiplier = 5; 
                 grids = [10, 20];
             }
 
-            // グリッド線の描画
             let chartHtml = "";
             grids.forEach(g => {
                 const bottomPx = g * scaleMultiplier;
                 chartHtml += `<div class="grid-line" style="bottom: ${bottomPx}px;"></div><div class="grid-label" style="bottom: ${bottomPx - 5}px;">${g}</div>`;
             });
 
-            // バーの描画
             for(let c=0; c<=maxCost; c++) {
                 let colHtml = `<div class="bar-col-wrapper"><div class="bar-col">`;
                 for(let color of orderedColors) {
@@ -968,10 +987,21 @@
                 chartHtml += colHtml;
             }
             document.getElementById("bar-chart-area").innerHTML = chartHtml;
+
+            let totalDisp;
+            if (totalCards === 50) {
+                totalDisp = `50枚 / 50枚`;
+            } else {
+                const statusText = totalCards < 50 ? "不足" : "超過";
+                totalDisp = `<span style="color:#d32f2f; font-weight:900; white-space:nowrap; font-size:11px; letter-spacing:-0.5px;">${totalCards}枚/50枚(${statusText})</span>`;
+            }
+
             document.getElementById("counter-body").innerHTML = `
                 <tr><td>なし</td><td>${counterStats["0"]}枚</td></tr><tr><td>+1000</td><td>${counterStats["1000"]}枚</td></tr>
-                <tr><td>+2000</td><td>${counterStats["2000"]}枚</td></tr><tr style="background:#eee; font-weight:bold;"><td>合計</td><td>${totalCards}枚 / 50枚</td></tr>
+                <tr><td>+2000</td><td>${counterStats["2000"]}枚</td></tr><tr style="background:#eee; font-weight:bold;"><td>合計</td><td>${totalDisp}</td></tr>
             `;
+
+            if (document.getElementById("calc-condition-type")) updateCalcConditionValues();
         }
 
         let simDeck = [];
@@ -1027,6 +1057,7 @@
             const sFeature = document.getElementById("sq-feature").value.toLowerCase();
             const sText = document.getElementById("sq-text").value.toLowerCase();
             const sColor = document.getElementById("sq-color").value;
+            const sAttribute = document.getElementById("sq-attribute") ? document.getElementById("sq-attribute").value : "";
             const sKind = document.getElementById("sq-kind").value;
             const sCost = document.getElementById("sq-cost").value;
             const sCostOp = document.getElementById("sq-cost-op").value;
@@ -1043,6 +1074,7 @@
                 if(!isValidColorForDeck(card.color)) return;
                 if(sExpansion && !card.id.startsWith(sExpansion)) return;
                 if (sColor && !card.color.includes(sColor)) return;
+                if (sAttribute && card.attribute !== sAttribute) return;
                 if (sKind && card.kind !== sKind) return;
                 
                 if (sCost !== "") {
@@ -1102,6 +1134,7 @@
                 deckData.push({ ...card, count: 1 });
                 renderDeck();
                 executeSearch(); 
+                showToast(`✅ ${card.name} を追加しました`);
             }
         }
 
@@ -1120,6 +1153,13 @@
             if(!deckName) return alert("デッキ名を入力してください。");
             
             const decks = getSavedDecks();
+
+            if (decks[deckName]) {
+                if (!confirm(`デッキ「${deckName}」は既に存在します。\n上書き保存してよろしいですか？`)) {
+                    return; 
+                }
+            }
+
             decks[deckName] = { updatedAt: new Date().toLocaleString(), cards: deckData };
             localStorage.setItem('onepiece_vault_decks', JSON.stringify(decks));
             
@@ -1458,6 +1498,86 @@
                 console.error(e); 
                 alert("デッキの読み込みに失敗しました。"); 
             }
+        }
+
+        // ===== サーチ確率計算ツール =====
+        function updateCalcConditionValues() {
+            const type = document.getElementById("calc-condition-type").value;
+            const valSelect = document.getElementById("calc-condition-value");
+            const currentVal = valSelect.value; 
+            valSelect.innerHTML = "";
+            
+            let values = new Set();
+            deckData.forEach(c => {
+                if(c.kind === "リーダー" || c.kind === "ドン!!" || c.count === 0) return;
+                if (type === "feature" && c.feature && c.feature !== "-") {
+                    c.feature.split("/").forEach(f => values.add(f.trim())); 
+                } else if (type === "attribute" && c.attribute && c.attribute !== "-") {
+                    values.add(c.attribute);
+                } else if (type === "kind" && c.kind) {
+                    values.add(c.kind);
+                } else if (type === "counter" && c.counter != null) {
+                    let cnt = c.counter === "-" ? "0" : String(c.counter);
+                    values.add(cnt);
+                }
+            });
+
+            let sortedValues = Array.from(values).sort();
+            if (sortedValues.length === 0) {
+                valSelect.innerHTML = `<option value="">該当なし</option>`;
+            } else {
+                sortedValues.forEach(v => {
+                    valSelect.insertAdjacentHTML('beforeend', `<option value="${v}">${v}</option>`);
+                });
+                if (sortedValues.includes(currentVal)) valSelect.value = currentVal; 
+            }
+            calculateProbability();
+        }
+
+        function calculateProbability() {
+            let N = 0; 
+            deckData.forEach(c => { if(c.kind !== "リーダー" && c.kind !== "ドン!!") N += c.count; });
+            
+            const type = document.getElementById("calc-condition-type").value;
+            const val = document.getElementById("calc-condition-value").value;
+            const k = parseInt(document.getElementById("calc-draw-count").value) || 0;
+
+            let M = 0; 
+            deckData.forEach(c => {
+                if(c.kind === "リーダー" || c.kind === "ドン!!" || c.count === 0) return;
+                let match = false;
+                if (type === "feature" && c.feature && c.feature.includes(val)) match = true;
+                else if (type === "attribute" && c.attribute === val) match = true;
+                else if (type === "kind" && c.kind === val) match = true;
+                else if (type === "counter") {
+                    let cnt = c.counter === "-" ? "0" : String(c.counter);
+                    if (cnt === val) match = true;
+                }
+                if (match) M += c.count;
+            });
+
+            document.getElementById("calc-target-count").innerText = M;
+
+            if (N === 0 || k <= 0 || M === 0) {
+                document.getElementById("calc-result-prob").innerText = "0.0%";
+                return;
+            }
+
+            function combination(n, r) {
+                if (r < 0 || r > n) return 0;
+                if (r === 0 || r === n) return 1;
+                if (r > n / 2) r = n - r;
+                let res = 1;
+                for (let i = 1; i <= r; i++) res = res * (n - i + 1) / i;
+                return res;
+            }
+
+            const totalPatterns = combination(N, k);
+            const failPatterns = combination(N - M, k);
+            let prob = 0;
+            if (totalPatterns > 0) prob = (1 - (failPatterns / totalPatterns)) * 100;
+            
+            document.getElementById("calc-result-prob").innerText = prob.toFixed(1) + "%";
         }
 
         initApp();
