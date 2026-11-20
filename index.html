@@ -5,8 +5,7 @@
     <meta name="viewport" content="width=600, user-scalable=yes">
     <title>OPCGvault - ワンピカードデッキビルダー</title>
 
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9440141990162646"
-     crossorigin="anonymous"></script>
+<script async src="https://www.googletagmanager.com/gtm.js?id=GTM-PRWP2V75"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
@@ -686,7 +685,9 @@
         const box = document.getElementById("hover-preview-box");
         const img = document.getElementById("hover-preview-img");
         const targetUrl = `https://www.onepiece-cardgame.com/images/cardlist/card/${cardId}.png`;
-        img.src = `https://wsrv.nl/?url=${encodeURIComponent(targetUrl)}`;
+        
+        // ★修正: 画質(q)を30まで下げる（WebPのq=30はかなり荒いですが判別は十分可能です）
+        img.src = `https://wsrv.nl/?url=${encodeURIComponent(targetUrl)}&w=250&output=webp&q=30`;
         
         box.style.display = "block";
         moveHoverPreview(e);
@@ -717,7 +718,9 @@
         hideHoverPreview(); 
         
         const targetUrl = `https://www.onepiece-cardgame.com/images/cardlist/card/${cardId}.png`;
-        const proxyUrl = `https://wsrv.nl/?url=${encodeURIComponent(targetUrl)}`;
+        
+        // ★修正: 高さを500pxに縮小し、画質(q)を40に落とす
+        const proxyUrl = `https://wsrv.nl/?url=${encodeURIComponent(targetUrl)}&h=500&output=webp&q=40`;
         
         document.getElementById("expanded-image").src = proxyUrl;
         document.getElementById("image-modal").style.display = "block";
