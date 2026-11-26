@@ -490,15 +490,48 @@
     <div class="modal-content">
         <span class="close" onclick="closeSaveModal()">&times;</span>
         <h3 style="margin-top:0;">デッキの保存・読み込み・共有</h3>
+
+        <!-- ★追加：端末間連携エリア -->
+        <div style="background: #f0f7ff; border: 1px solid #90caf9; border-radius: 6px; padding: 10px; margin-bottom: 15px; font-size: 12px;">
+            <div style="font-weight: bold; color: #1565c0; margin-bottom: 6px;">📱 端末間でデッキを共有（クラウド連携）</div>
+            
+            <!-- 未連携時に表示 -->
+            <div id="sync-unlinked-area">
+                <div style="color: #555; margin-bottom: 8px; line-height: 1.4;">連携IDを発行すると、PCとスマホで同じ保存済みデッキを共有できます。</div>
+                <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                    <button id="btn-issue-id" onclick="issueSyncId()" style="background: #1e88e5; color: #fff; border: none; padding: 7px 12px; border-radius: 4px; font-weight: bold; cursor: pointer;">ID発行</button>
+                    <button onclick="toggleSyncInputArea()" style="background: #fff; color: #1e88e5; border: 1px solid #1e88e5; padding: 7px 12px; border-radius: 4px; font-weight: bold; cursor: pointer;">別端末のIDを入力</button>
+                </div>
+            </div>
+
+            <!-- 連携済みの時に表示 -->
+            <div id="sync-linked-area" style="display: none;">
+                <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px;">
+                    <div>連携ID: <b id="sync-id-display" style="font-size: 16px; letter-spacing: 1px; color: #222; background: #fff; padding: 2px 8px; border-radius: 4px; border: 1px solid #ccc;">---- - ----</b></div>
+                    <div style="display: flex; gap: 4px;">
+                        <button onclick="copySyncId()" style="background: #555; color: #fff; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold;">コピー</button>
+                        <button onclick="toggleSyncInputArea()" style="background: #fff; color: #555; border: 1px solid #aaa; padding: 5px 8px; border-radius: 4px; cursor: pointer; font-size: 11px;">別IDに切替</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ID入力フォーム（ボタンを押した時だけ開く） -->
+            <div id="sync-input-area" style="display: none; margin-top: 8px; padding-top: 8px; border-top: 1px dashed #90caf9;">
+                <div style="display: flex; gap: 6px; align-items: center;">
+                    <input type="text" id="sync-id-input" inputmode="numeric" maxlength="9" placeholder="例: 1234-5678" style="flex: 1; font-size: 14px; letter-spacing: 1px;">
+                    <button id="btn-link-id" onclick="linkExistingSyncId()" style="background: #4caf50; color: #fff; border: none; padding: 7px 12px; border-radius: 4px; font-weight: bold; cursor: pointer;">連携する</button>
+                </div>
+            </div>
+        </div>
         
         <div style="margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
-            <div style="font-weight: bold; margin-bottom: 5px;">ローカル保存 ＆ 投稿</div>
+            <div style="font-weight: bold; margin-bottom: 5px;">デッキ保存 ＆ 投稿</div>
             <input type="text" id="deck-name-input" placeholder="デッキ名を入力" style="width: calc(100% - 90px); margin-bottom: 5px;">
             <input type="text" id="deck-author-input" placeholder="作成者名 (※投稿用)" style="width: calc(100% - 90px); margin-bottom: 8px;">
             <label style="display:block; font-size:13px; font-weight:bold; margin-bottom: 10px; color:#e65100;">
                 <input type="checkbox" id="save-and-publish-check"> 同時に「みんなのデッキ」に公開する
             </label>
-            <button onclick="saveCurrentDeck()" style="padding: 10px 15px; background: #333; color: #fff; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">保存を実行</button>
+            <button id="btn-save-deck" onclick="saveCurrentDeck()" style="padding: 10px 15px; background: #333; color: #fff; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">保存を実行</button>
         </div>
 
         <div style="margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
@@ -506,7 +539,11 @@
             <button onclick="copyShareUrl()" style="width: 100%; padding: 10px; background: #1e88e5; color: #fff; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">共有用URLをコピー</button>
         </div>
 
-        <div style="font-weight: bold; margin-bottom: 5px;">保存済みデッキ一覧</div>
+        <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 2px;">
+            <div style="font-weight: bold;">保存済みデッキ一覧 <span id="saved-decks-count" style="font-size: 12px; color: #555;"></span></div>
+            <span id="sync-loading-indicator" style="font-size: 11px; color: #1e88e5; display: none;">🔄 同期中...</span>
+        </div>
+        <div style="font-size: 11px; color: #777; margin-bottom: 6px;">※現在1つのIDにつき30個まで保存可能です（要望があれば増やします！）</div>
         <div id="saved-decks-list" style="max-height: 30vh; overflow-y: auto; border: 1px solid #ddd; padding: 5px; border-radius: 4px;"></div>
     </div>
 </div>
@@ -549,7 +586,7 @@
 
 
 <script>
-    const GAS_API_URL = 'https://script.google.com/macros/s/AKfycby9fTpT4-i79WnJ3Utgx4MW-khWoLee8blbgQUWfHNiZGD3lqD6ydG_NlF2_k6APm3n/exec';
+    const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbxAEJzsKJFf_HZM0O2IuUvc22Rqx31WsLhfCRFQjhtjzQesnMdb2h8-YT-TjIy8iJ1h/exec';
     const CACHE_KEY = 'opcg_master_data_cache';
 
     let masterCatalog = []; 
@@ -1225,11 +1262,252 @@
         }
     }
 
-    function openSaveModal() { document.getElementById("save-modal").style.display = "block"; renderSavedDecksList(); }
-    function closeSaveModal() { document.getElementById("save-modal").style.display = "none"; }
-    function getSavedDecks() { const saved = localStorage.getItem('onepiece_vault_decks'); return saved ? JSON.parse(saved) : {}; }
+    // ===== デッキ保存・端末間クラウド連携 =====
+    const SYNC_ID_KEY = 'opcg_sync_id';
+    const CLOUD_CACHE_KEY = 'opcg_cloud_decks_cache';
+    const LOCAL_DECKS_KEY = 'onepiece_vault_decks';
+    const MAX_DECK_LIMIT = 30;
 
-    function saveCurrentDeck() {
+    function getSyncId() {
+        return localStorage.getItem(SYNC_ID_KEY) || "";
+    }
+
+    function formatSyncId(rawId) {
+        const clean = String(rawId).replace(/[^0-9]/g, "");
+        if (clean.length === 8) return clean.slice(0, 4) + "-" + clean.slice(4);
+        return clean;
+    }
+
+    // フルデッキ配列 → 軽量ペア配列 [[id, count], ...] に変換（順番維持）
+    function serializeCards(cardsArray) {
+        if (!Array.isArray(cardsArray)) return [];
+        const res = [];
+        cardsArray.forEach(c => {
+            if (!c) return;
+            // 既に [id, count] 形式ならそのまま
+            if (Array.isArray(c)) {
+                if (c[1] > 0) res.push([c[0], c[1]]);
+            } else if (c.id && c.count > 0) {
+                res.push([c.id, c.count]);
+            }
+        });
+        return res;
+    }
+
+    // 軽量ペア配列 [[id, count], ...] → フルデッキ配列に復元
+    function hydrateCards(compactOrFullCards) {
+        if (!Array.isArray(compactOrFullCards)) return [];
+        const result = [];
+        compactOrFullCards.forEach(item => {
+            if (Array.isArray(item)) {
+                const [id, count] = item;
+                const master = masterCatalog.find(c => c.id === id);
+                if (master) result.push({ ...master, count: count });
+            } else if (item && item.id) {
+                // 旧ローカル形式の場合も最新マスタ情報と紐付け直す
+                const master = masterCatalog.find(c => c.id === item.id) || item;
+                result.push({ ...master, count: item.count });
+            }
+        });
+        return result;
+    }
+
+    // ローカル保存デッキをクラウド送信用の軽量マップに変換
+    function buildCompactLocalDecks() {
+        const raw = localStorage.getItem(LOCAL_DECKS_KEY);
+        if (!raw) return {};
+        try {
+            const parsed = JSON.parse(raw);
+            const compact = {};
+            Object.keys(parsed).forEach(name => {
+                compact[name] = {
+                    updatedAt: parsed[name].updatedAt || "",
+                    cards: serializeCards(parsed[name].cards || [])
+                };
+            });
+            return compact;
+        } catch (e) {
+            return {};
+        }
+    }
+
+    function getSavedDecks() {
+        const syncId = getSyncId();
+        const key = syncId ? CLOUD_CACHE_KEY : LOCAL_DECKS_KEY;
+        const saved = localStorage.getItem(key);
+        return saved ? JSON.parse(saved) : {};
+    }
+
+    function renderSyncStatusUI() {
+        const syncId = getSyncId();
+        const unlinkedDiv = document.getElementById("sync-unlinked-area");
+        const linkedDiv = document.getElementById("sync-linked-area");
+        const idDisp = document.getElementById("sync-id-display");
+
+        if (syncId) {
+            unlinkedDiv.style.display = "none";
+            linkedDiv.style.display = "block";
+            idDisp.innerText = formatSyncId(syncId);
+        } else {
+            unlinkedDiv.style.display = "block";
+            linkedDiv.style.display = "none";
+        }
+    }
+
+    function toggleSyncInputArea() {
+        const area = document.getElementById("sync-input-area");
+        area.style.display = (area.style.display === "none") ? "block" : "none";
+        if (area.style.display === "block") {
+            document.getElementById("sync-id-input").focus();
+        }
+    }
+
+    function copySyncId() {
+        const syncId = getSyncId();
+        if (!syncId) return;
+        const formatted = formatSyncId(syncId);
+        navigator.clipboard.writeText(formatted).then(() => {
+            showToast(`📋 連携ID (${formatted}) をコピーしました`);
+        }).catch(() => {
+            prompt("以下の連携IDをコピーしてください:", formatted);
+        });
+    }
+
+    function openSaveModal() {
+        document.getElementById("save-modal").style.display = "block";
+        document.getElementById("sync-input-area").style.display = "none";
+        renderSyncStatusUI();
+        renderSavedDecksList();
+
+        // 連携済みの場合は、モーダルを開いた裏で最新デッキ一覧を取得して反映
+        if (getSyncId()) {
+            fetchCloudDecksSilent();
+        }
+    }
+
+    function closeSaveModal() {
+        document.getElementById("save-modal").style.display = "none";
+    }
+
+    // クラウドから最新デッキ一覧を取得（モーダル表示時の自動同期用）
+    async function fetchCloudDecksSilent() {
+        const syncId = getSyncId();
+        if (!syncId) return;
+        const indicator = document.getElementById("sync-loading-indicator");
+        if (indicator) indicator.style.display = "inline";
+
+        try {
+            const res = await fetch(GAS_API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain' },
+                body: JSON.stringify({ type: "sync_get_or_merge", syncId: syncId, localDecks: {} })
+            });
+            const data = await res.json();
+            if (data.status === "success" && data.decks) {
+                localStorage.setItem(CLOUD_CACHE_KEY, JSON.stringify(data.decks));
+                renderSavedDecksList();
+            }
+        } catch (e) {
+            console.error("クラウド同期エラー:", e);
+        } finally {
+            if (indicator) indicator.style.display = "none";
+        }
+    }
+
+    // 新規連携IDの発行（＋現在のローカルデッキを自動移行）
+    async function issueSyncId() {
+        const btn = document.getElementById("btn-issue-id");
+        btn.disabled = true;
+        btn.innerText = "発行中...";
+
+        try {
+            const localDecks = buildCompactLocalDecks();
+            const res = await fetch(GAS_API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain' },
+                body: JSON.stringify({ type: "sync_issue_id", localDecks: localDecks })
+            });
+            const data = await res.json();
+
+            if (data.status === "success" && data.syncId) {
+                localStorage.setItem(SYNC_ID_KEY, data.syncId);
+                localStorage.setItem(CLOUD_CACHE_KEY, JSON.stringify(data.decks || {}));
+                localStorage.removeItem(LOCAL_DECKS_KEY); // 移行済みのためローカル枠をクリア
+                renderSyncStatusUI();
+                renderSavedDecksList();
+                alert(`連携ID「${formatSyncId(data.syncId)}」を発行しました！\n別端末で「別端末のIDを入力」からこの番号を入れるとデッキを共有できます。`);
+            } else {
+                alert("IDの発行に失敗しました: " + (data.message || ""));
+            }
+        } catch (e) {
+            console.error(e);
+            alert("通信エラーが発生しました。時間をおいて再度お試しください。");
+        } finally {
+            btn.disabled = false;
+            btn.innerText = "ID発行";
+        }
+    }
+
+    // 別端末の連携IDを入力して連携（＋手元の未連携ローカルデッキがあれば自動統合）
+    async function linkExistingSyncId() {
+        const inputEl = document.getElementById("sync-id-input");
+        const cleanId = inputEl.value.replace(/[^0-9]/g, "");
+        if (cleanId.length !== 8) {
+            return alert("8桁の数字を入力してください（ハイフンはあってもなくてもOKです）。");
+        }
+
+        const btn = document.getElementById("btn-link-id");
+        btn.disabled = true;
+        btn.innerText = "連携中...";
+
+        try {
+            // まだどのIDとも連携していなかった端末なら、ローカルデッキを統合対象として送る
+            const hasPreviousSync = !!getSyncId();
+            const localDecks = hasPreviousSync ? {} : buildCompactLocalDecks();
+
+            const res = await fetch(GAS_API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain' },
+                body: JSON.stringify({
+                    type: "sync_get_or_merge",
+                    syncId: cleanId,
+                    localDecks: localDecks
+                })
+            });
+            const data = await res.json();
+
+            if (data.status === "success") {
+                localStorage.setItem(SYNC_ID_KEY, cleanId);
+                localStorage.setItem(CLOUD_CACHE_KEY, JSON.stringify(data.decks || {}));
+                if (!hasPreviousSync) localStorage.removeItem(LOCAL_DECKS_KEY);
+
+                inputEl.value = "";
+                document.getElementById("sync-input-area").style.display = "none";
+                renderSyncStatusUI();
+                renderSavedDecksList();
+
+                let msg = `連携ID「${formatSyncId(cleanId)}」と連携しました！`;
+                if (data.mergedCount > 0) {
+                    msg += `\n（この端末にあった ${data.mergedCount} 個のデッキを統合しました）`;
+                }
+                if (data.skippedCount > 0) {
+                    msg += `\n※上限（30個）を超えたため ${data.skippedCount} 個のデッキは統合されませんでした。`;
+                }
+                alert(msg);
+            } else {
+                alert(data.message || "連携に失敗しました。");
+            }
+        } catch (e) {
+            console.error(e);
+            alert("通信エラーが発生しました。");
+        } finally {
+            btn.disabled = false;
+            btn.innerText = "連携する";
+        }
+    }
+
+    // デッキの保存（連携中ならクラウドへ直接保存、未連携ならローカル保存）
+    async function saveCurrentDeck() {
         const nameInput = document.getElementById("deck-name-input");
         const authorInput = document.getElementById("deck-author-input");
         const isPublish = document.getElementById("save-and-publish-check").checked;
@@ -1237,68 +1515,118 @@
         const deckName = nameInput.value.trim();
         const author = authorInput.value.trim() || "名無しプレイヤー";
         
-        if(!deckName) return alert("デッキ名を入力してください。");
-        
-        const decks = getSavedDecks();
+        if (!deckName) return alert("デッキ名を入力してください。");
 
-        if (decks[deckName]) {
+        const compactCards = serializeCards(deckData);
+        if (compactCards.length === 0) return alert("デッキにカードがありません！");
+
+        const decks = getSavedDecks();
+        const isOverwrite = !!decks[deckName];
+
+        if (!isOverwrite && Object.keys(decks).length >= MAX_DECK_LIMIT) {
+            return alert(`保存上限（${MAX_DECK_LIMIT}個）に達しています。\n不要なデッキを削除してから保存してください。`);
+        }
+
+        if (isOverwrite) {
             if (!confirm(`デッキ「${deckName}」は既に存在します。\n上書き保存してよろしいですか？`)) {
                 return; 
             }
         }
 
-        decks[deckName] = { updatedAt: new Date().toLocaleString(), cards: deckData };
-        localStorage.setItem('onepiece_vault_decks', JSON.stringify(decks));
-        
-        if (isPublish) {
-            let deckMap = {};
-            deckData.forEach(c => { if (c.count > 0) deckMap[c.id] = c.count; });
-            if (Object.keys(deckMap).length === 0) return alert("デッキにカードがありません！");
-            
-            const jsonStr = JSON.stringify(deckMap);
-            const encoded = btoa(unescape(encodeURIComponent(jsonStr)));
-            const shareUrl = `${window.location.origin}${window.location.pathname}#deck=${encoded}`;
-            
-            fetch(GAS_API_URL, {
-                method: 'POST', headers: { 'Content-Type': 'text/plain' },
-                body: JSON.stringify({ 
-                    type: "デッキレシピ提供", 
-                    deckName: deckName, 
-                    author: author, 
-                    url: shareUrl 
-                })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.status === "success") {
+        const btn = document.getElementById("btn-save-deck");
+        btn.disabled = true;
+        btn.innerText = "保存中...";
+
+        try {
+            const syncId = getSyncId();
+
+            // 1. 個人保管庫への保存（クラウド or ローカル）
+            if (syncId) {
+                const res = await fetch(GAS_API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain' },
+                    body: JSON.stringify({
+                        type: "sync_save_deck",
+                        syncId: syncId,
+                        deckName: deckName,
+                        cards: compactCards
+                    })
+                });
+                const data = await res.json();
+                if (data.status !== "success") {
+                    alert("保存に失敗しました: " + (data.message || ""));
+                    return;
+                }
+                localStorage.setItem(CLOUD_CACHE_KEY, JSON.stringify(data.decks));
+            } else {
+                decks[deckName] = { updatedAt: new Date().toLocaleString(), cards: compactCards };
+                localStorage.setItem(LOCAL_DECKS_KEY, JSON.stringify(decks));
+            }
+
+            // 2. 「みんなのデッキ」への同時公開チェックが入っている場合
+            if (isPublish) {
+                let deckMap = {};
+                deckData.forEach(c => { if (c.count > 0) deckMap[c.id] = c.count; });
+                const jsonStr = JSON.stringify(deckMap);
+                const encoded = btoa(unescape(encodeURIComponent(jsonStr)));
+                const shareUrl = `${window.location.origin}${window.location.pathname}#deck=${encoded}`;
+                
+                const pubRes = await fetch(GAS_API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain' },
+                    body: JSON.stringify({ 
+                        type: "デッキレシピ提供", 
+                        deckName: deckName, 
+                        author: author, 
+                        url: shareUrl 
+                    })
+                });
+                const pubData = await pubRes.json();
+                if (pubData.status === "success") {
                     alert(`デッキ「${deckName}」を保存し、みんなのデッキに投稿しました！`);
                 } else {
-                    alert("保存は完了しましたが、投稿に失敗しました: " + data.message);
+                    alert("デッキ保存は完了しましたが、投稿に失敗しました: " + pubData.message);
                 }
-            })
-            .catch(err => { console.error(err); alert("通信エラーにより投稿に失敗しました（ローカル保存は完了しています）。"); });
-            
-        } else {
-            alert(`デッキ「${deckName}」を保存しました！`);
+            } else {
+                showToast(`✅ デッキ「${deckName}」を保存しました`);
+            }
+
+            renderSavedDecksList();
+            nameInput.value = "";
+
+        } catch (err) {
+            console.error(err);
+            alert("通信エラーにより保存に失敗しました。電波状況をご確認ください。");
+        } finally {
+            btn.disabled = false;
+            btn.innerText = "保存を実行";
         }
-        
-        renderSavedDecksList();
-        nameInput.value = "";
     }
 
     function renderSavedDecksList() {
         const listDiv = document.getElementById("saved-decks-list");
+        const countSpan = document.getElementById("saved-decks-count");
         const decks = getSavedDecks();
         const names = Object.keys(decks);
-        if(names.length === 0) { listDiv.innerHTML = '<div style="color:#888; padding:5px;">保存されたデッキはありません。</div>'; return; }
+
+        if (countSpan) countSpan.innerText = `(${names.length} / ${MAX_DECK_LIMIT})`;
+
+        if (names.length === 0) {
+            listDiv.innerHTML = '<div style="color:#888; padding:5px;">保存されたデッキはありません。</div>';
+            return;
+        }
+
         let html = "";
         names.forEach(name => {
+            const safeName = name.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
             html += `
-                <div style="display:flex; justify-content:space-between; align-items:center; padding:6px; border-bottom:1px solid #eee;">
-                    <div><b>${name}</b> <span style="font-size:11px; color:#888;">(${decks[name].updatedAt})</span></div>
-                    <div>
-                        <button onclick="loadDeck('${name}')" style="background:#4caf50; color:#fff; border:none; padding:6px 10px; border-radius:3px; cursor:pointer; font-weight:bold;">読込</button>
-                        <button onclick="deleteDeck('${name}')" style="background:#d9534f; color:#fff; border:none; padding:6px 10px; border-radius:3px; cursor:pointer; font-weight:bold;">削除</button>
+                <div style="display:flex; justify-content:space-between; align-items:center; padding:6px; border-bottom:1px solid #eee; gap:6px;">
+                    <div style="flex:1; min-width:0; word-break:break-word;">
+                        <b>${name}</b> <span style="font-size:11px; color:#888;">(${decks[name].updatedAt || ""})</span>
+                    </div>
+                    <div style="flex-shrink:0;">
+                        <button onclick="loadDeck('${safeName}')" style="background:#4caf50; color:#fff; border:none; padding:6px 10px; border-radius:3px; cursor:pointer; font-weight:bold;">読込</button>
+                        <button onclick="deleteDeck('${safeName}')" style="background:#d9534f; color:#fff; border:none; padding:6px 10px; border-radius:3px; cursor:pointer; font-weight:bold;">削除</button>
                     </div>
                 </div>
             `;
@@ -1308,15 +1636,48 @@
 
     function loadDeck(name) {
         const decks = getSavedDecks();
-        if(decks[name]) { deckData = decks[name].cards; renderDeck(); closeSaveModal(); alert(`デッキ「${name}」を読み込みました！`); }
+        if (decks[name]) {
+            deckData = hydrateCards(decks[name].cards);
+            document.getElementById("deck-name-input").value = name; // 上書きしやすいようデッキ名欄にもセット
+            renderDeck();
+            closeSaveModal();
+            showToast(`📂 デッキ「${name}」を読み込みました`);
+        }
     }
 
-    function deleteDeck(name) {
-        if(confirm(`デッキ「${name}」を削除しますか？`)) {
+    async function deleteDeck(name) {
+        if (!confirm(`デッキ「${name}」を削除しますか？`)) return;
+
+        const syncId = getSyncId();
+        if (syncId) {
+            const indicator = document.getElementById("sync-loading-indicator");
+            if (indicator) indicator.style.display = "inline";
+            try {
+                const res = await fetch(GAS_API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain' },
+                    body: JSON.stringify({ type: "sync_delete_deck", syncId: syncId, deckName: name })
+                });
+                const data = await res.json();
+                if (data.status === "success") {
+                    localStorage.setItem(CLOUD_CACHE_KEY, JSON.stringify(data.decks));
+                    renderSavedDecksList();
+                    showToast(`🗑️ デッキ「${name}」を削除しました`);
+                } else {
+                    alert("削除に失敗しました: " + (data.message || ""));
+                }
+            } catch (e) {
+                console.error(e);
+                alert("通信エラーにより削除に失敗しました。");
+            } finally {
+                if (indicator) indicator.style.display = "none";
+            }
+        } else {
             const decks = getSavedDecks();
             delete decks[name];
-            localStorage.setItem('onepiece_vault_decks', JSON.stringify(decks));
+            localStorage.setItem(LOCAL_DECKS_KEY, JSON.stringify(decks));
             renderSavedDecksList();
+            showToast(`🗑️ デッキ「${name}」を削除しました`);
         }
     }
 
